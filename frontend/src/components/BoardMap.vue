@@ -45,6 +45,11 @@ onBeforeUnmount(() => {
   cursor: crosshair;
 }
 
+.board-map.is-placing .board-icon,
+.board-map.is-placing .board-shape {
+  pointer-events: none;
+}
+
 .board-icon {
   background: none;
   border: none;
