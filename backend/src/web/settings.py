@@ -13,12 +13,19 @@ class Settings(BaseSettings):
 
     data_dir: Path = _DATA
     cors_origins: str = "*"
+    tile_retention_days: int = 30
+    tile_max_bytes: int = 2 * 1024**3
+    tile_sweep_seconds: int = 3600
 
     model_config = SettingsConfigDict(env_file=".env")
 
     @property
     def origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def tile_dir(self) -> Path:
+        return self.data_dir / "tiles"
 
 
 settings = Settings()

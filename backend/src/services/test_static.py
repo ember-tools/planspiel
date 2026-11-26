@@ -51,12 +51,13 @@ class StaticResponseTest(unittest.TestCase):
                      "hilfe/..", "./", "p/..", "a\x00b"):
             self.assert_shell(path)
 
-    def test_unknown_api_paths_are_404_not_the_shell(self):
-        for path in ("api", "api/", "api/boards/x"):
+    def test_unknown_api_and_tile_paths_are_404_not_the_shell(self):
+        for path in ("api", "api/", "api/boards/x", "tiles", "tiles/14/abc/1.png"):
             with self.assertRaises(HTTPException) as raised:
                 asyncio.run(main.spa(path))
             self.assertEqual(404, raised.exception.status_code)
-        self.assertTrue(str(asyncio.run(main.spa("apis")).path).endswith("index.html"))
+        for path in ("apis", "tilesets"):
+            self.assertTrue(str(asyncio.run(main.spa(path)).path).endswith("index.html"))
 
     def test_build_info_is_not_cached(self):
         self.assertEqual("no-store", main.static_response("build.json").headers["cache-control"])

@@ -23,7 +23,7 @@ Everything the server keeps lives under `/data`:
 
 | Path | Content |
 |---|---|
-| `/data` | Shared boards and the map tile cache |
+| `/data/tiles` | OpenStreetMap tiles fetched on demand, with `index.sqlite` recording when each was last read. Tiles unread for `TILE_RETENTION_DAYS` are deleted, and beyond `TILE_MAX_BYTES` the ones read longest ago |
 
 ### Environment
 
@@ -31,6 +31,9 @@ Everything the server keeps lives under `/data`:
 |---|---|---|
 | `DATA_DIR` | `/data` in the image | Where boards and tiles are kept |
 | `CORS_ORIGINS` | `*` | Comma separated allowed origins; `https://planspiel.emberbox.app` in production |
+| `TILE_RETENTION_DAYS` | `30` | Days after its last read until a map tile is deleted |
+| `TILE_MAX_BYTES` | `2147483648` | Upper limit of the tile cache in bytes |
+| `TILE_SWEEP_SECONDS` | `3600` | How often unread tiles are evicted |
 | `LOG_FORMAT` | `json` in the image | `json` writes ECS JSON lines to stdout |
 | `LOG_LEVEL` | `INFO` | Log level when `LOG_FORMAT=json` |
 

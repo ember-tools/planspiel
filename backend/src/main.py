@@ -1,3 +1,6 @@
+import asyncio
+import contextlib
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -5,13 +8,46 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
+from services.tiles import TileCache, tile_client
+from services.tiles import router as tile_router
 from web.app import router
 from web.logformat import configure_logging
 from web.settings import settings
 
 configure_logging()
+logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Planspielplatte")
+
+async def _evict_tiles(cache: TileCache) -> None:
+    """Evicts unread tiles once per sweep interval; a failed pass is logged and retried next time."""
+    while True:
+        try:
+            deleted = await asyncio.to_thread(cache.evict)
+            if deleted:
+                logger.info("Evicted %s map tiles", deleted)
+        except Exception:
+            logger.exception("Evicting map tiles failed")
+        await asyncio.sleep(settings.tile_sweep_seconds)
+
+
+@contextlib.asynccontextmanager
+async def lifespan(application: FastAPI):
+    client = tile_client()
+    cache = TileCache(settings.tile_dir, client, settings.tile_retention_days * 86400.0, settings.tile_max_bytes)
+    application.state.tile_cache = cache
+    orphans = await asyncio.to_thread(cache.reconcile)
+    if orphans:
+        logger.info("Removed %s map tile files without an index entry", orphans)
+    sweeper = asyncio.create_task(_evict_tiles(cache))
+    yield
+    sweeper.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await sweeper
+    await cache.close()
+    await client.aclose()
+
+
+app = FastAPI(title="Planspielplatte", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,6 +58,7 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(tile_router)
 
 
 @app.get("/api/health")
@@ -64,8 +101,9 @@ def _shell(root: Path) -> FileResponse:
 
 
 async def spa(path: str) -> FileResponse:
-    """Everything that is not an API route, see `static_response`; unknown API paths are 404."""
-    if path == "api" or path.startswith("api/"):
+    """Everything outside the API and the tiles, see `static_response`; unknown paths below either
+    are 404 rather than the shell."""
+    if path.split("/", 1)[0] in ("api", "tiles"):
         raise HTTPException(status_code=404)
     return static_response(path)
 

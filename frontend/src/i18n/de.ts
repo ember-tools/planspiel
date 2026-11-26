@@ -11,9 +11,6 @@ export default {
         board: 'Platte',
         notFound: 'Nicht gefunden',
     },
-    board: {
-        comingSoon: 'Die Platte wird gerade aufgebaut.',
-    },
     notFound: {
         title: 'Diese Seite gibt es nicht.',
         back: 'Zur Startseite',
