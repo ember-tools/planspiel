@@ -42,10 +42,10 @@ BROWSER_CACHE = "public, max-age=86400"
 WAIT_AFTER_FAILURE = 300.0
 HOME = "https://planspiel.emberbox.app"
 MAX_CONCURRENT_FETCHES = 4
-GLOBAL_MISS_BURST = 120
-GLOBAL_MISSES_PER_SECOND = 0.5
-CLIENT_MISS_BURST = 60
-CLIENT_MISSES_PER_SECOND = 0.25
+GLOBAL_MISS_BURST = 1000
+GLOBAL_MISSES_PER_SECOND = 2.0
+CLIENT_MISS_BURST = 400
+CLIENT_MISSES_PER_SECOND = 1.0
 TOUCH_INTERVAL = 3600.0
 EVICTION_BATCH = 500
 logger = logging.getLogger(__name__)
@@ -69,8 +69,10 @@ class MissBudget:
     """Token buckets that limit how many tiles may be fetched upstream.
 
     Every cache miss takes a token from the bucket shared by everyone and one from the bucket of
-    the requesting client. Buckets refill continuously up to their burst size. Maps panning around
-    a few districts stay well inside the budget; a loop walking the whole box does not.
+    the requesting client. Buckets refill continuously up to their burst size. A map zooming in
+    through several levels at once needs a few hundred new tiles and stays inside the burst, while
+    the slow refill keeps the sustained rate far below anything that could count as bulk
+    downloading; a loop walking the whole box, millions of tiles, does not get far.
     """
 
     def __init__(self, clock: Callable[[], float] = time.time) -> None:
