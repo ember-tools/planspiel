@@ -1,3 +1,5 @@
+import {INCIDENT_MARK_KINDS, WATER_SUPPLY_MARK_KINDS} from '@emberbox/ui'
+import {readFileSync} from 'node:fs'
 import {beforeEach, describe, expect, it} from 'vitest'
 import {defaultSquads} from '../catalog'
 import {createBoard, sortedSnapshots} from './document'
@@ -64,6 +66,18 @@ describe('parseBoard', () => {
     it('refuses unknown kinds and styles', () => {
         expect(problemAfter(copy => { copy.features[featureId].mark = 'volcano' })).toBe('field')
         expect(problemAfter(copy => { copy.features[featureId].kind = 'circle' })).toBe('field')
+    })
+
+    it('refuses the water supply marks, which boards do not carry', () => {
+        for (const mark of WATER_SUPPLY_MARK_KINDS) {
+            expect(problemAfter(copy => { copy.features[featureId].mark = mark }), mark).toBe('field')
+        }
+    })
+
+    it('accepts exactly the marks the server accepts', () => {
+        const server = readFileSync(new URL('../../../backend/src/data/board_format.py', import.meta.url), 'utf-8')
+        const kinds = /^MARK_KINDS = \((.*)\)$/m.exec(server)![1]!.match(/"[^"]+"/g)!.map(kind => JSON.parse(kind))
+        expect(kinds).toEqual([...INCIDENT_MARK_KINDS])
     })
 
     it('refuses a squad id shared by two vehicles and ids that reach a prototype', () => {

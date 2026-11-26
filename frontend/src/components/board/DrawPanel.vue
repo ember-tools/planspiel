@@ -1,19 +1,17 @@
 <script setup lang="ts">
-import {useConfirm} from '@emberbox/ui'
+import {INCIDENT_MARK_KINDS, TacticalSymbol, markSymbolTree, useConfirm} from '@emberbox/ui'
 import {computed} from 'vue'
 import {drawFeature, eraseFeature, removeFeature} from '../../board/edits'
 import {AREA_STYLES, LINE_STYLES, type Feature} from '../../board/model'
 import {boardState, commit, currentSnapshot, select, useTool, type Tool} from '../../board/store'
 import {t} from '../../i18n'
-import {MARK_KINDS, markSymbol} from '../../symbols/tactical'
-import TacticalSymbol from '../TacticalSymbol.vue'
 
 /** Tools for marks, lines, areas and texts, and the editor of the selected one. */
 const confirm = useConfirm()
 
 
 /** The marks offered for placing; the staging area is drawn as a rectangle instead. */
-const PLACEABLE_MARKS = MARK_KINDS.filter(mark => mark !== 'staging')
+const PLACEABLE_MARKS = INCIDENT_MARK_KINDS.filter(mark => mark !== 'staging')
 
 const editable = computed(() => !boardState.readOnly)
 const snapshot = computed(() => currentSnapshot.value)
@@ -87,7 +85,7 @@ async function deleteEverywhere(feature: Feature): Promise<void> {
                    :variant="isActive({kind: 'place-mark', mark}) ? 'solid' : 'outline'"
                    class="flex h-auto min-w-0 flex-col items-center gap-1 p-1.5 text-[11px] leading-tight"
                    :title="t(`marks.${mark}`)" @click="toggle({kind: 'place-mark', mark})">
-            <TacticalSymbol :svg="markSymbol(mark)" :width="32"/>
+            <TacticalSymbol :symbol="markSymbolTree(mark)" :width="32"/>
             <span class="line-clamp-2 w-full break-words text-center">{{ t(`marks.${mark}`) }}</span>
           </UButton>
         </div>

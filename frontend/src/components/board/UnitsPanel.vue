@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {useConfirm} from '@emberbox/ui'
+import {TacticalSymbol, unitSymbolTree, useConfirm} from '@emberbox/ui'
 import {computed, ref} from 'vue'
 import {formatStrength, squadFunction, typeInRegion} from '../../catalog'
 import {crewStrength, dismountSquad, mountSquad, removeVehicle, withdrawVehicle} from '../../board/edits'
@@ -7,8 +7,7 @@ import {VEHICLE_DRAG_TYPE} from '../../board/map-tools'
 import type {LatLng, Vehicle} from '../../board/model'
 import {boardState, commit, currentSnapshot, select, useTool} from '../../board/store'
 import {t} from '../../i18n'
-import {vehicleSymbol} from '../../symbols/units'
-import TacticalSymbol from '../TacticalSymbol.vue'
+import {vehicleSpec} from '../../symbols/units'
 import VehicleDialog from './VehicleDialog.vue'
 
 /** The vehicles of the board with their crews: add, edit, place, dismount and mount. */
@@ -133,7 +132,7 @@ function actions(vehicle: Vehicle) {
         <div class="flex items-center gap-2 p-2" :draggable="editable" @dragstart="startDrag($event, vehicle)">
           <button type="button" class="flex min-w-0 grow cursor-pointer items-center gap-2 text-left"
                   @click="focusVehicle(vehicle)">
-            <TacticalSymbol :svg="vehicleSymbol(vehicle.type, board?.region ?? '')" :width="44"
+            <TacticalSymbol :symbol="unitSymbolTree(vehicleSpec(vehicle.type, board?.region ?? ''))" :width="44"
                             :class="placement(vehicle) ? '' : 'opacity-50'"/>
             <span class="min-w-0">
               <span class="block truncate font-semibold">{{ vehicle.callsign }}</span>

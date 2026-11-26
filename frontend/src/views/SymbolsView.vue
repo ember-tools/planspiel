@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
-import TacticalSymbol from '../components/TacticalSymbol.vue'
+import {INCIDENT_MARK_KINDS, TacticalSymbol, markSymbolTree, unitSymbolTree} from '@emberbox/ui'
 import {DEFAULT_REGION, REGIONS, SQUAD_FUNCTIONS, baseType, defaultSquads, formatStrength, region, strength, type VehicleCategory} from '../catalog'
 import {t} from '../i18n'
-import {MARK_KINDS, markSymbol} from '../symbols/tactical'
-import {squadSymbol, vehicleSymbol} from '../symbols/units'
+import {squadSpec, vehicleSpec} from '../symbols/units'
 
 const regionId = ref(DEFAULT_REGION)
 const regionItems = REGIONS.map(entry => ({label: entry.name, value: entry.id}))
@@ -37,7 +36,7 @@ const groups = computed(() => CATEGORIES
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <div v-for="type in group.types" :key="type.id"
                class="flex items-center gap-3 rounded-(--ui-radius) border border-default p-2">
-            <TacticalSymbol :svg="vehicleSymbol(type.id, regionId)" :width="64"/>
+            <TacticalSymbol :symbol="unitSymbolTree(vehicleSpec(type.id, regionId))" :width="64"/>
             <div class="min-w-0">
               <p class="m-0 font-semibold">
                 {{ type.name }}<span v-if="type.radioCode" class="tabular text-muted"> · {{ type.radioCode }}</span>
@@ -56,7 +55,7 @@ const groups = computed(() => CATEGORIES
       <h2 class="section-title m-0">{{ t('symbols.squads') }}</h2>
       <div class="flex flex-wrap gap-4">
         <div v-for="entry in SQUAD_FUNCTIONS" :key="entry.id" class="flex w-24 flex-col items-center gap-1 text-center">
-          <TacticalSymbol :svg="squadSymbol(entry.id)" :width="64"/>
+          <TacticalSymbol :symbol="unitSymbolTree(squadSpec(entry.id))" :width="64"/>
           <span class="text-[13px]">{{ entry.name }}</span>
         </div>
       </div>
@@ -65,8 +64,8 @@ const groups = computed(() => CATEGORIES
     <section class="flex flex-col gap-3">
       <h2 class="section-title m-0">{{ t('symbols.marks') }}</h2>
       <div class="flex flex-wrap gap-4">
-        <div v-for="mark in MARK_KINDS" :key="mark" class="flex w-28 flex-col items-center gap-1 text-center">
-          <TacticalSymbol :svg="markSymbol(mark)" :width="64"/>
+        <div v-for="mark in INCIDENT_MARK_KINDS" :key="mark" class="flex w-28 flex-col items-center gap-1 text-center">
+          <TacticalSymbol :symbol="markSymbolTree(mark)" :width="64"/>
           <span class="text-[13px]">{{ t(`marks.${mark}`) }}</span>
         </div>
       </div>

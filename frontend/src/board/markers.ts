@@ -1,5 +1,5 @@
 import {formatStrength, squadFunction} from '../catalog'
-import {escapeSvg, markSymbol} from '../symbols/tactical'
+import {escapeSvg, markSymbol} from '@emberbox/ui'
 import {squadSymbol, vehicleSymbol} from '../symbols/units'
 import {t} from '../i18n'
 import {crewStrength} from './edits'

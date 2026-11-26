@@ -1,4 +1,4 @@
-import {MARK_KINDS} from '../symbols/tactical'
+import {INCIDENT_MARK_KINDS} from '@emberbox/ui'
 import {AREA_STYLES, LINE_STYLES, type Board} from './model'
 import {FORBIDDEN_KEYS} from './operations'
 
@@ -69,7 +69,7 @@ function checkVehicle(vehicle: Fields, at: string): void {
 function checkFeature(feature: Fields, at: string): void {
     count(feature.order, `${at}.order`)
     oneOf(feature.kind, ['mark', 'line', 'area', 'text'], `${at}.kind`)
-    if (feature.kind === 'mark') oneOf(feature.mark, MARK_KINDS, `${at}.mark`)
+    if (feature.kind === 'mark') oneOf(feature.mark, INCIDENT_MARK_KINDS, `${at}.mark`)
     if (feature.kind === 'line') oneOf(feature.style, LINE_STYLES, `${at}.style`)
     if (feature.kind === 'area') oneOf(feature.style, AREA_STYLES, `${at}.style`)
 }

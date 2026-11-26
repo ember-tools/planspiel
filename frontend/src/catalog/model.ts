@@ -1,8 +1,4 @@
-/** Whose colours a symbol carries. */
-export type Organisation = 'fire' | 'medical'
-
-/** The basic form of a tactical symbol. */
-export type SymbolShape = 'vehicle' | 'container' | 'trailer' | 'boat' | 'unit'
+import type {Organisation, SymbolShape} from '@emberbox/ui'
 
 /** Where a member of a crew stands in a strength report (Führer / Unterführer / Mannschaft). */
 export type Rank = 'leader' | 'subLeader' | 'crew'

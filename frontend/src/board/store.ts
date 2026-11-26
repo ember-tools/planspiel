@@ -1,5 +1,5 @@
 import {computed, reactive} from 'vue'
-import type {MarkKind} from '../symbols/tactical'
+import type {MarkKind} from './model'
 import {createBoard, sortedSnapshots} from './document'
 import {parseBoard} from './validate'
 import type {AreaStyle, Board, LineStyle, Snapshot} from './model'
