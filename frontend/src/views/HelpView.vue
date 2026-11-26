@@ -48,6 +48,7 @@ usePage({
     <HelpSection title="Lagestände">
       <HelpTopic :paragraphs="[
         'Unter der Karte stehen die Lagestände nach Uhrzeit. „Lagestand“ legt einen neuen als Kopie des gezeigten an, fünf Minuten später. Danach verschiebst du dort, was sich bewegt hat.',
+        'Das kleine Plus vor einem Lagestand fügt einen neuen davor ein: zwischen zwei Lageständen zur Uhrzeit in der Mitte, mit allem, was in einem der beiden zu sehen ist – was in beiden steht, an der Stelle des früheren. Vor dem ersten Lagestand entsteht eine Kopie fünf Minuten früher.',
         'Mit den Pfeiltasten links und rechts oder den Pfeilen an der Zeitleiste schaltest du durch die Lagestände. Die Animation lässt sich an der Zeitleiste ausschalten.',
         'Im Reiter „Lage“ stellst du Uhrzeit und Titel des Lagestands ein und schreibst die Lagemeldung dazu.',
       ]"/>

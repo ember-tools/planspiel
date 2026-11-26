@@ -1,9 +1,10 @@
 import {beforeEach, describe, expect, it} from 'vitest'
 import {defaultSquads, formatStrength} from '../catalog'
-import {createBoard, sortedSnapshots} from './document'
+import {createBoard, minutesBetween, sortedSnapshots} from './document'
 import {
-    addFeature, addVehicle, crewStrength, dismountSquad, eraseFeature, mountSquad, placeVehicle, removeFeature,
-    removeVehicle, setSquads, withdrawVehicle,
+    addFeature, addVehicle, copySnapshot, crewStrength, dismountSquad, eraseFeature, insertSnapshotBefore,
+    insertSnapshotBetween, mountSquad, placeVehicle, removeFeature, removeVehicle, setSquads,
+    updateSnapshot, withdrawVehicle,
 } from './edits'
 import type {Board} from './model'
 import {applyOperations, type Operation} from './operations'
@@ -97,5 +98,104 @@ describe('features', () => {
         expect(board.features[id]).toBeDefined()
         apply(removeFeature(board, id))
         expect(board.features).toEqual({})
+    })
+})
+
+describe('inserted snapshots', () => {
+    /** Adds a copy of a snapshot, at a given time, and returns its id. */
+    function later(sourceId: string, time: string): string {
+        const copy = copySnapshot(board, sourceId)!
+        apply(copy.operations)
+        apply(updateSnapshot(copy.id, {time}))
+        return copy.id
+    }
+
+    it('counts the minutes between two times, across midnight', () => {
+        expect(minutesBetween('2026-11-26T23:50', '2026-11-27T00:20')).toBe(30)
+    })
+
+    it('go in the middle between two snapshots and show what either shows', () => {
+        apply(updateSnapshot(snapshotId, {time: '2026-11-26T10:00'}))
+        apply(placeVehicle(board, snapshotId, vehicleId, [52.5, 13.4]))
+        const [leader, attack] = squadIds()
+        apply(dismountSquad(board, snapshotId, attack!))
+        const end = later(snapshotId, '2026-11-26T10:25')
+        apply(placeVehicle(board, end, vehicleId, [52.6, 13.5]))
+        apply(mountSquad(end, attack!))
+        apply(dismountSquad(board, end, leader!))
+        const fire = addFeature(board, end, {kind: 'mark', mark: 'fire'}, {points: [[52.5, 13.4]], text: ''})
+        apply(fire.operations)
+
+        const inserted = insertSnapshotBetween(board, snapshotId, end)!
+        apply(inserted.operations)
+        const middle = board.snapshots[inserted.id]!
+        expect(middle.time).toBe('2026-11-26T10:12')
+        expect(middle.title).toBe('')
+        expect(middle.report).toBe('')
+        expect(middle.vehicles[vehicleId]!.position).toEqual([52.5, 13.4])
+        expect(Object.keys(middle.squads).sort()).toEqual([leader, attack].sort())
+        expect(middle.features[fire.id]).toBeDefined()
+        expect(sortedSnapshots(board).map(snapshot => snapshot.id)).toEqual([snapshotId, inserted.id, end])
+    })
+
+    it('never go between two snapshots of the same time or unknown ones', () => {
+        apply(updateSnapshot(snapshotId, {time: '2026-11-26T10:00'}))
+        const same = later(snapshotId, '2026-11-26T10:00')
+        expect(insertSnapshotBetween(board, snapshotId, same)).toBeNull()
+        expect(insertSnapshotBetween(board, snapshotId, 'unknown')).toBeNull()
+        expect(insertSnapshotBefore(board, 'unknown')).toBeNull()
+    })
+
+    it('stay between their neighbours on the night the clocks go back', () => {
+        apply(updateSnapshot(snapshotId, {time: '2026-10-25T02:50'}))
+        const end = later(snapshotId, '2026-10-25T03:00')
+        const inserted = insertSnapshotBetween(board, snapshotId, end)!
+        apply(inserted.operations)
+        expect(board.snapshots[inserted.id]!.time).toBe('2026-10-25T02:55')
+    })
+
+    it('keep a squad from the later snapshot beside its vehicle where the earlier one stands it', () => {
+        apply(updateSnapshot(snapshotId, {time: '2026-11-26T10:00'}))
+        apply(placeVehicle(board, snapshotId, vehicleId, [52.5, 13.4]))
+        const end = later(snapshotId, '2026-11-26T10:20')
+        apply(placeVehicle(board, end, vehicleId, [52.6, 13.5]))
+        const attack = squadIds()[1]!
+        apply(dismountSquad(board, end, attack))
+        const offset = board.snapshots[end]!.squads[attack]!.position.map((value, axis) => value - [52.6, 13.5][axis]!)
+        const inserted = insertSnapshotBetween(board, snapshotId, end)!
+        apply(inserted.operations)
+        const squad = board.snapshots[inserted.id]!.squads[attack]!.position
+        expect(squad[0]).toBeCloseTo(52.5 + offset[0]!, 9)
+        expect(squad[1]).toBeCloseTo(13.4 + offset[1]!, 9)
+    })
+
+    it('take a vehicle and its squads from the later snapshot when the earlier one has it withdrawn', () => {
+        apply(updateSnapshot(snapshotId, {time: '2026-11-26T10:00'}))
+        const end = later(snapshotId, '2026-11-26T10:20')
+        apply(placeVehicle(board, end, vehicleId, [52.6, 13.5]))
+        const attack = squadIds()[1]!
+        apply(dismountSquad(board, end, attack))
+        const inserted = insertSnapshotBetween(board, snapshotId, end)!
+        apply(inserted.operations)
+        expect(board.snapshots[inserted.id]!.vehicles[vehicleId]).toEqual(board.snapshots[end]!.vehicles[vehicleId])
+        expect(board.snapshots[inserted.id]!.squads[attack]).toEqual(board.snapshots[end]!.squads[attack])
+    })
+
+    it('copy the first snapshot five minutes earlier when inserted before it', () => {
+        apply(updateSnapshot(snapshotId, {time: '2026-11-27T00:02'}))
+        apply(placeVehicle(board, snapshotId, vehicleId, [52.5, 13.4]))
+        const inserted = insertSnapshotBefore(board, snapshotId)!
+        apply(inserted.operations)
+        expect(board.snapshots[inserted.id]!.time).toBe('2026-11-26T23:57')
+        expect(board.snapshots[inserted.id]!.vehicles[vehicleId]).toEqual(board.snapshots[snapshotId]!.vehicles[vehicleId])
+        expect(sortedSnapshots(board)[0]!.id).toBe(inserted.id)
+    })
+
+    it('do not share placed things with the snapshots they came from', () => {
+        apply(placeVehicle(board, snapshotId, vehicleId, [52.5, 13.4]))
+        const inserted = insertSnapshotBefore(board, snapshotId)!
+        apply(inserted.operations)
+        board.snapshots[inserted.id]!.vehicles[vehicleId]!.position[0] = 0
+        expect(board.snapshots[snapshotId]!.vehicles[vehicleId]!.position[0]).toBe(52.5)
     })
 })

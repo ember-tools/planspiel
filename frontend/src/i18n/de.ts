@@ -118,6 +118,8 @@ export default {
         untitled: 'Ohne Titel',
         add: 'Lagestand',
         addHint: 'Neuen Lagestand als Kopie des gezeigten anlegen',
+        insertBetween: 'Lagestand zwischen {earlier} und {later} einfügen',
+        insertBefore: 'Lagestand vor {time} einfügen',
         animate: 'Animation',
         follow: 'Spielleitung folgen',
     },

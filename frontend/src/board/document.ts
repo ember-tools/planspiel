@@ -17,12 +17,33 @@ export function localNow(now = new Date()): string {
         + `T${pad(now.getHours())}:${pad(now.getMinutes())}`
 }
 
-/** A snapshot time moved by some minutes, across midnight and month ends alike. */
-export function addMinutes(time: string, minutes: number): string {
+/**
+ * A snapshot time as minutes on a clock that knows no daylight saving: snapshot times are what the
+ * wall clock showed, so arithmetic on them is done in UTC, where every day has 24 hours.
+ */
+function clockMinutes(time: string): number {
     const [date = '', clock = ''] = time.split('T')
     const [year, month, day] = date.split('-').map(Number)
     const [hours, mins] = clock.split(':').map(Number)
-    return localNow(new Date(year!, month! - 1, day!, hours!, mins! + minutes))
+    return Date.UTC(year!, month! - 1, day!, hours!, mins!) / 60_000
+}
+
+/** Writes minutes on that clock back as a snapshot time. */
+function clockTime(minutes: number): string {
+    const time = new Date(minutes * 60_000)
+    const pad = (value: number) => String(value).padStart(2, '0')
+    return `${time.getUTCFullYear()}-${pad(time.getUTCMonth() + 1)}-${pad(time.getUTCDate())}`
+        + `T${pad(time.getUTCHours())}:${pad(time.getUTCMinutes())}`
+}
+
+/** A snapshot time moved by some minutes, across midnight and month ends alike. */
+export function addMinutes(time: string, minutes: number): string {
+    return clockTime(clockMinutes(time) + minutes)
+}
+
+/** The minutes from one snapshot time to another, by the wall clock. */
+export function minutesBetween(earlier: string, later: string): number {
+    return clockMinutes(later) - clockMinutes(earlier)
 }
 
 /** An empty snapshot at a time. */
