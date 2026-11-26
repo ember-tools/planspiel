@@ -5,7 +5,7 @@ import {drawFeature, moveSquad, placeVehicle, vehicleOfSquad} from './edits'
 import {shapePoints, toLatLng} from './geometry'
 import {betweenFrames, cornersOf, frameOf, isRectangle} from './rectangle'
 import {editRectangle, type RectangleEditor} from './rectangle-editor'
-import {featureMarker, squadMarker, symbolSize, vehicleMarker, type MarkerContent} from './markers'
+import {featureMarker, squadMarker, symbolSize, vehicleMarker, vehicleSymbolPerMetre, type MarkerContent} from './markers'
 import type {Feature, LatLng} from './model'
 import {boardState, commit, currentSnapshot, select, viewerSettings, type Selection} from './store'
 import {escapeSvg} from '@emberbox/ui'
@@ -363,11 +363,14 @@ export function useBoardLayers(map: L.Map): void {
     }
 
     function scaleSymbols(): void {
-        map.getContainer().style.setProperty('--board-symbol', `${symbolSize(map.getZoom())}px`)
+        const style = map.getContainer().style
+        style.setProperty('--board-symbol', `${symbolSize(map.getZoom())}px`)
+        const perMetre = vehicleSymbolPerMetre(map.getZoom(), map.getCenter().lat)
+        style.setProperty('--board-symbol-per-metre', `${perMetre}px`)
     }
 
     scaleSymbols()
-    map.on('zoomend', scaleSymbols)
+    map.on('zoomend moveend', scaleSymbols)
 
     const stop = watchEffect(() => {
         const snapshotId = currentSnapshot.value?.id ?? null
@@ -380,7 +383,7 @@ export function useBoardLayers(map: L.Map): void {
     onBeforeUnmount(() => {
         stop()
         for (const key of [...moving.keys()]) stopMoving(key)
-        map.off('zoomend', scaleSymbols)
+        map.off('zoomend moveend', scaleSymbols)
         markerGroup.remove()
         shapeGroup.remove()
     })
