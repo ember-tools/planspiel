@@ -37,6 +37,7 @@ Frontend
   fe-typecheck          vue-tsc only
   fe-dev                Vite dev server, proxying /api and /tiles to the backend
   fe-install            npm install
+  fe-test               Unit tests with vitest
   fe-deploy             Build and copy the result to backend/static, so the backend serves the
                         whole app from one port as the image does
 
@@ -53,7 +54,7 @@ Docker
   docker-dev            Start the dev stack: backend with --reload, Vite on 5176
 
 Combined
-  verify                be-test and fe-build, what CI runs
+  verify                be-test, fe-test and fe-build, what CI runs
 USAGE
 }
 
@@ -68,6 +69,7 @@ case "$cmd" in
     fe-typecheck)  fe; run npx vue-tsc -b "$@" ;;
     fe-dev)        fe; run npm run dev -- "$@" ;;
     fe-install)    fe; run npm install "$@" ;;
+    fe-test)       fe; run npm test -- "$@" ;;
     fe-deploy)
         fe; run npm run build
         rm -rf "$BACKEND/static"
@@ -94,6 +96,7 @@ case "$cmd" in
 
     verify)
         "$ROOT/toolchain.sh" be-test
+        "$ROOT/toolchain.sh" fe-test
         "$ROOT/toolchain.sh" fe-build
         ;;
 

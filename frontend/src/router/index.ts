@@ -5,6 +5,8 @@ const routes: RouteRecordRaw[] = [
     {path: '/hilfe', name: 'Help', component: () => import('../views/HelpView.vue'), meta: {public: true}},
     {path: '/p/:token', name: 'Board', component: () => import('../views/BoardView.vue'),
         meta: {titleKey: 'routes.board'}},
+    {path: '/zeichen', name: 'Symbols', component: () => import('../views/SymbolsView.vue'),
+        meta: {titleKey: 'routes.symbols'}},
     {path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFoundView.vue'),
         meta: {titleKey: 'routes.notFound'}},
 ]
