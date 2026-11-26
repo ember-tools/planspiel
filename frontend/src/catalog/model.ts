@@ -70,6 +70,8 @@ export interface BaseType {
     category: VehicleCategory
     organisation: Organisation
     shape: SymbolShape
+    /** Roughly how long such a vehicle is, in metres, for drawing it to scale on the map. */
+    length: number
     squads: SquadTemplate[]
 }
 

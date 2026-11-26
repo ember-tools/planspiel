@@ -56,17 +56,22 @@ onBeforeUnmount(() => {
 }
 
 .board-marker {
+  --board-marker-size: var(--board-symbol, 48px);
   display: flex;
   flex-direction: column;
   align-items: center;
   width: max-content;
-  min-width: var(--board-symbol, 48px);
-  transform: translate(-50%, calc(var(--board-symbol, 48px) / -3));
+  min-width: var(--board-marker-size);
+  transform: translate(-50%, calc(var(--board-marker-size) / -3));
+}
+
+.board-marker.is-to-scale {
+  --board-marker-size: max(var(--board-symbol, 48px), calc(var(--board-length) * var(--board-symbol-per-metre, 0px)));
 }
 
 .board-marker-symbol {
   display: block;
-  width: var(--board-symbol, 48px);
+  width: var(--board-marker-size);
   line-height: 0;
   filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-black) 35%, transparent));
 }

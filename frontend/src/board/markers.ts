@@ -1,5 +1,5 @@
-import {formatStrength, squadFunction} from '../catalog'
-import {escapeSvg, markSymbol} from '@emberbox/ui'
+import {baseOf, formatStrength, squadFunction} from '../catalog'
+import {SYMBOL_WIDTH, escapeSvg, markSymbol} from '@emberbox/ui'
 import {squadSymbol, vehicleSymbol} from '../symbols/units'
 import {t} from '../i18n'
 import {crewStrength} from './edits'
@@ -19,6 +19,26 @@ export function symbolSize(zoom: number): number {
     return Math.min(LARGEST_SYMBOL, Math.max(SMALLEST_SYMBOL, size))
 }
 
+const EARTH_CIRCUMFERENCE = 40_075_016.686
+const TILE_SIZE = 256
+const VEHICLE_BODY_WIDTH = 100
+
+/**
+ * How many pixels one metre covers on a Web Mercator map at a zoom level and latitude, which is
+ * what drawing a vehicle to scale needs.
+ */
+export function pixelsPerMetre(zoom: number, latitude: number): number {
+    return TILE_SIZE * 2 ** zoom / (EARTH_CIRCUMFERENCE * Math.cos(latitude * Math.PI / 180))
+}
+
+/**
+ * How wide a vehicle's symbol is per metre of the vehicle, in pixels: the body of a vehicle symbol
+ * takes 100 of the canvas' 120 units, and that body stands for the vehicle's length.
+ */
+export function vehicleSymbolPerMetre(zoom: number, latitude: number): number {
+    return pixelsPerMetre(zoom, latitude) * SYMBOL_WIDTH / VEHICLE_BODY_WIDTH
+}
+
 /** What a marker shows: the HTML of its icon and whether it is selected. */
 export interface MarkerContent {
     html: string
@@ -29,10 +49,15 @@ function caption(lines: string[]): string {
     return lines.filter(Boolean).map(line => `<span class="board-marker-caption">${escapeSvg(line)}</span>`).join('')
 }
 
-function marker(symbol: string, lines: string[], selected: boolean): MarkerContent {
-    const state = selected ? ' is-selected' : ''
+/**
+ * A marker with a symbol and caption lines. With a length in metres the symbol is drawn to scale,
+ * but never smaller than other symbols at the same zoom.
+ */
+function marker(symbol: string, lines: string[], selected: boolean, length?: number): MarkerContent {
+    const classes = ['board-marker', selected ? 'is-selected' : '', length ? 'is-to-scale' : ''].filter(Boolean).join(' ')
+    const style = length ? ` style="--board-length: ${length}"` : ''
     return {
-        html: `<div class="board-marker${state}"><span class="board-marker-symbol">${symbol}</span>${caption(lines)}</div>`,
+        html: `<div class="${classes}"${style}><span class="board-marker-symbol">${symbol}</span>${caption(lines)}</div>`,
         selected,
     }
 }
@@ -42,7 +67,7 @@ export function vehicleMarker(board: Board, snapshotId: string, vehicle: Vehicle
     const {mounted, dismounted} = crewStrength(board, snapshotId, vehicle.id)
     const crew = dismounted.total ? t('board.aboard', {strength: formatStrength(mounted)}) : formatStrength(mounted)
     const crewLine = mounted.total + dismounted.total ? crew : ''
-    return marker(vehicleSymbol(vehicle.type, board.region), [vehicle.callsign, crewLine], selected)
+    return marker(vehicleSymbol(vehicle.type, board.region), [vehicle.callsign, crewLine], selected, baseOf(vehicle.type).length)
 }
 
 /** The marker of a dismounted squad: its symbol, its strength and the vehicle it belongs to. */

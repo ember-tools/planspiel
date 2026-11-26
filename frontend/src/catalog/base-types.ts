@@ -40,65 +40,65 @@ const DRIVER: SquadTemplate[] = [{function: 'driver', strength: 1}]
  * the crew a new vehicle of that kind starts with.
  */
 export const BASE_TYPES: BaseType[] = [
-    {id: 'engine-group', name: 'Löschfahrzeug (Gruppe)', category: 'engine', organisation: 'fire', shape: 'vehicle', squads: GROUP},
-    {id: 'engine-squad', name: 'Löschfahrzeug (Staffel)', category: 'engine', organisation: 'fire', shape: 'vehicle', squads: SQUAD},
-    {id: 'engine-reduced', name: 'Löschfahrzeug (vermindert)', category: 'engine', organisation: 'fire', shape: 'vehicle', squads: REDUCED},
-    {id: 'tanker', name: 'Tanklöschfahrzeug', category: 'engine', organisation: 'fire', shape: 'vehicle', squads: VEHICLE_CREW},
-    {id: 'aerial', name: 'Hubrettungsfahrzeug', category: 'aerial', organisation: 'fire', shape: 'vehicle', squads: VEHICLE_CREW},
-    {id: 'rescue', name: 'Rüstwagen', category: 'technical', organisation: 'fire', shape: 'vehicle', squads: VEHICLE_CREW},
-    {id: 'command-1', name: 'Einsatzleitwagen 1', category: 'command', organisation: 'fire', shape: 'vehicle', squads: [
+    {id: 'engine-group', name: 'Löschfahrzeug (Gruppe)', category: 'engine', organisation: 'fire', shape: 'vehicle', length: 8.5, squads: GROUP},
+    {id: 'engine-squad', name: 'Löschfahrzeug (Staffel)', category: 'engine', organisation: 'fire', shape: 'vehicle', length: 7.5, squads: SQUAD},
+    {id: 'engine-reduced', name: 'Löschfahrzeug (vermindert)', category: 'engine', organisation: 'fire', shape: 'vehicle', length: 6.5, squads: REDUCED},
+    {id: 'tanker', name: 'Tanklöschfahrzeug', category: 'engine', organisation: 'fire', shape: 'vehicle', length: 8.5, squads: VEHICLE_CREW},
+    {id: 'aerial', name: 'Hubrettungsfahrzeug', category: 'aerial', organisation: 'fire', shape: 'vehicle', length: 10.5, squads: VEHICLE_CREW},
+    {id: 'rescue', name: 'Rüstwagen', category: 'technical', organisation: 'fire', shape: 'vehicle', length: 9, squads: VEHICLE_CREW},
+    {id: 'command-1', name: 'Einsatzleitwagen 1', category: 'command', organisation: 'fire', shape: 'vehicle', length: 6, squads: [
         {function: 'platoon-leader', strength: 1},
         {function: 'command-support', strength: 2},
     ]},
-    {id: 'command-post', name: 'Einsatzleitwagen 2', category: 'command', organisation: 'fire', shape: 'vehicle', squads: [
+    {id: 'command-post', name: 'Einsatzleitwagen 2', category: 'command', organisation: 'fire', shape: 'vehicle', length: 8, squads: [
         {function: 'unit-leader', strength: 1},
         {function: 'vehicle-leader', strength: 1},
         {function: 'command-support', strength: 4},
     ]},
-    {id: 'command-car', name: 'Kommandowagen', category: 'command', organisation: 'fire', shape: 'vehicle', squads: [
+    {id: 'command-car', name: 'Kommandowagen', category: 'command', organisation: 'fire', shape: 'vehicle', length: 5, squads: [
         {function: 'platoon-leader', strength: 1},
         {function: 'driver', strength: 1},
     ]},
-    {id: 'command-car-medical', name: 'Kommandowagen Rettungsdienst', category: 'medical', organisation: 'medical', shape: 'vehicle', squads: [
+    {id: 'command-car-medical', name: 'Kommandowagen Rettungsdienst', category: 'medical', organisation: 'medical', shape: 'vehicle', length: 5, squads: [
         {function: 'emergency-doctor', strength: 1},
         {function: 'driver', strength: 1},
     ]},
-    {id: 'transport', name: 'Mannschaftstransportfahrzeug', category: 'logistics', organisation: 'fire', shape: 'vehicle', squads: SMALL_CREW},
-    {id: 'hose', name: 'Schlauchwagen', category: 'logistics', organisation: 'fire', shape: 'vehicle', squads: SMALL_CREW},
-    {id: 'equipment', name: 'Gerätewagen', category: 'technical', organisation: 'fire', shape: 'vehicle', squads: SMALL_CREW},
-    {id: 'equipment-medical', name: 'Gerätewagen Sanität', category: 'medical', organisation: 'medical', shape: 'vehicle', squads: SMALL_CREW},
-    {id: 'cbrn-recon', name: 'Mess- und Erkundungsfahrzeug', category: 'hazmat', organisation: 'fire', shape: 'vehicle', squads: [
+    {id: 'transport', name: 'Mannschaftstransportfahrzeug', category: 'logistics', organisation: 'fire', shape: 'vehicle', length: 6, squads: SMALL_CREW},
+    {id: 'hose', name: 'Schlauchwagen', category: 'logistics', organisation: 'fire', shape: 'vehicle', length: 8, squads: SMALL_CREW},
+    {id: 'equipment', name: 'Gerätewagen', category: 'technical', organisation: 'fire', shape: 'vehicle', length: 9, squads: SMALL_CREW},
+    {id: 'equipment-medical', name: 'Gerätewagen Sanität', category: 'medical', organisation: 'medical', shape: 'vehicle', length: 7, squads: SMALL_CREW},
+    {id: 'cbrn-recon', name: 'Mess- und Erkundungsfahrzeug', category: 'hazmat', organisation: 'fire', shape: 'vehicle', length: 6.5, squads: [
         {function: 'vehicle-leader', strength: 1},
         {function: 'squad', strength: 2},
         {function: 'driver', strength: 1},
     ]},
-    {id: 'swap-body-carrier', name: 'Wechselladerfahrzeug', category: 'swap-body', organisation: 'fire', shape: 'vehicle', squads: DRIVER},
-    {id: 'roll-off-container', name: 'Abrollbehälter', category: 'swap-body', organisation: 'fire', shape: 'container', squads: []},
-    {id: 'trailer', name: 'Anhänger', category: 'other', organisation: 'fire', shape: 'trailer', squads: []},
-    {id: 'boat-trailer', name: 'Anhänger mit Boot', category: 'water', organisation: 'fire', shape: 'trailer', squads: []},
-    {id: 'boat', name: 'Boot', category: 'water', organisation: 'fire', shape: 'boat', squads: SMALL_CREW},
-    {id: 'crane', name: 'Kranwagen', category: 'technical', organisation: 'fire', shape: 'vehicle', squads: SMALL_CREW},
-    {id: 'truck', name: 'Lastkraftwagen', category: 'logistics', organisation: 'fire', shape: 'vehicle', squads: DRIVER},
-    {id: 'machine', name: 'Arbeitsmaschine', category: 'technical', organisation: 'fire', shape: 'vehicle', squads: DRIVER},
-    {id: 'small-vehicle', name: 'Kleineinsatzfahrzeug', category: 'other', organisation: 'fire', shape: 'vehicle', squads: SMALL_CREW},
-    {id: 'first-responder', name: 'Ersthelferfahrzeug', category: 'other', organisation: 'fire', shape: 'vehicle', squads: [
+    {id: 'swap-body-carrier', name: 'Wechselladerfahrzeug', category: 'swap-body', organisation: 'fire', shape: 'vehicle', length: 10, squads: DRIVER},
+    {id: 'roll-off-container', name: 'Abrollbehälter', category: 'swap-body', organisation: 'fire', shape: 'container', length: 7, squads: []},
+    {id: 'trailer', name: 'Anhänger', category: 'other', organisation: 'fire', shape: 'trailer', length: 4.5, squads: []},
+    {id: 'boat-trailer', name: 'Anhänger mit Boot', category: 'water', organisation: 'fire', shape: 'trailer', length: 7, squads: []},
+    {id: 'boat', name: 'Boot', category: 'water', organisation: 'fire', shape: 'boat', length: 6, squads: SMALL_CREW},
+    {id: 'crane', name: 'Kranwagen', category: 'technical', organisation: 'fire', shape: 'vehicle', length: 12, squads: SMALL_CREW},
+    {id: 'truck', name: 'Lastkraftwagen', category: 'logistics', organisation: 'fire', shape: 'vehicle', length: 9, squads: DRIVER},
+    {id: 'machine', name: 'Arbeitsmaschine', category: 'technical', organisation: 'fire', shape: 'vehicle', length: 7, squads: DRIVER},
+    {id: 'small-vehicle', name: 'Kleineinsatzfahrzeug', category: 'other', organisation: 'fire', shape: 'vehicle', length: 6, squads: SMALL_CREW},
+    {id: 'first-responder', name: 'Ersthelferfahrzeug', category: 'other', organisation: 'fire', shape: 'vehicle', length: 5, squads: [
         {function: 'squad', strength: 2},
     ]},
-    {id: 'ambulance', name: 'Rettungswagen', category: 'medical', organisation: 'medical', shape: 'vehicle', squads: [
+    {id: 'ambulance', name: 'Rettungswagen', category: 'medical', organisation: 'medical', shape: 'vehicle', length: 7, squads: [
         {function: 'paramedic', strength: 2},
     ]},
-    {id: 'emergency-doctor', name: 'Notarzteinsatzfahrzeug', category: 'medical', organisation: 'medical', shape: 'vehicle', squads: [
+    {id: 'emergency-doctor', name: 'Notarzteinsatzfahrzeug', category: 'medical', organisation: 'medical', shape: 'vehicle', length: 5, squads: [
         {function: 'emergency-doctor', strength: 1},
         {function: 'paramedic', strength: 1},
     ]},
-    {id: 'intensive-care', name: 'Intensivtransportwagen', category: 'medical', organisation: 'medical', shape: 'vehicle', squads: [
+    {id: 'intensive-care', name: 'Intensivtransportwagen', category: 'medical', organisation: 'medical', shape: 'vehicle', length: 8, squads: [
         {function: 'emergency-doctor', strength: 1},
         {function: 'paramedic', strength: 2},
     ]},
-    {id: 'patient-transport', name: 'Krankentransportwagen', category: 'medical', organisation: 'medical', shape: 'vehicle', squads: [
+    {id: 'patient-transport', name: 'Krankentransportwagen', category: 'medical', organisation: 'medical', shape: 'vehicle', length: 6, squads: [
         {function: 'paramedic', strength: 2},
     ]},
-    {id: 'stroke-unit', name: 'Stroke-Einsatz-Mobil', category: 'medical', organisation: 'medical', shape: 'vehicle', squads: [
+    {id: 'stroke-unit', name: 'Stroke-Einsatz-Mobil', category: 'medical', organisation: 'medical', shape: 'vehicle', length: 7.5, squads: [
         {function: 'emergency-doctor', strength: 1},
         {function: 'paramedic', strength: 2},
     ]},
@@ -108,5 +108,5 @@ const BY_ID = new Map(BASE_TYPES.map(base => [base.id, base]))
 
 /** The base type with an id, falling back to a generic vehicle for an unknown id. */
 export function baseType(id: string): BaseType {
-    return BY_ID.get(id as BaseTypeId) ?? {id: 'equipment', name: id, category: 'other', organisation: 'fire', shape: 'vehicle', squads: []}
+    return BY_ID.get(id as BaseTypeId) ?? {id: 'equipment', name: id, category: 'other', organisation: 'fire', shape: 'vehicle', length: 8, squads: []}
 }
