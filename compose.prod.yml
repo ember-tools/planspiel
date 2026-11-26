@@ -1,0 +1,27 @@
+services:
+  planspiel:
+    image: "ghcr.io/ember-tools/planspiel:latest"
+    restart: unless-stopped
+    labels:
+      traefik.enable: true
+      traefik.docker.network: "${PROXY_NETWORK:-proxy}"
+      traefik.http.routers.planspiel.rule: "Host(`${PLANSPIEL_HOST:?set PLANSPIEL_HOST to the public host name}`)"
+      traefik.http.routers.planspiel.entrypoints: "${TRAEFIK_ENTRYPOINT:-websecure}"
+      traefik.http.routers.planspiel.tls: true
+      traefik.http.routers.planspiel.tls.certresolver: "${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      traefik.http.routers.planspiel.observability.accessLogs: false
+      traefik.http.services.planspiel.loadbalancer.server.port: 8000
+    environment:
+      CORS_ORIGINS: "https://${PLANSPIEL_HOST}"
+    volumes:
+      - planspiel-data:/data
+    networks:
+      - proxy
+
+volumes:
+  planspiel-data:
+
+networks:
+  proxy:
+    name: "${PROXY_NETWORK:-proxy}"
+    external: true
