@@ -32,6 +32,7 @@ usePage({
       <HelpTopic title="Absitzen und aufsitzen" :paragraphs="[
         'Klicke ein Fahrzeug an, dann erscheinen seine Trupps. Mit „Absitzen“ steigt ein Trupp aus und steht neben dem Fahrzeug; von da an bewegst du ihn unabhängig. Mit „Aufsitzen“ steigt er wieder ein und fährt mit dem Fahrzeug. Absitzen kann nur, wer in einem Fahrzeug auf der Karte sitzt.',
         '„Alle absitzen“ und „Alle aufsitzen“ erledigen das für die ganze Besatzung auf einmal.',
+        'Dasselbe geht direkt auf der Karte: Klickst du ein Fahrzeug an, öffnet sich daneben ein kleines Menü mit seinen Trupps; ein abgesessener Trupp bietet dort „Aufsitzen“ an.',
         'Unter dem Fahrzeug steht die Stärke der Besatzung an Bord als Führer/Unterführer/Mannschaft/Gesamt, etwa 0/1/5/6.',
       ]"/>
     </HelpSection>

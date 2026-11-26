@@ -3,8 +3,8 @@ import {defaultSquads, formatStrength} from '../catalog'
 import {createBoard, minutesBetween, sortedSnapshots} from './document'
 import {
     addFeature, addVehicle, copySnapshot, crewStrength, dismountSquad, eraseFeature, insertSnapshotBefore,
-    insertSnapshotBetween, mountSquad, normalHeading, placeVehicle, removeFeature, removeVehicle, setSquads, turnVehicle,
-    updateSnapshot, withdrawVehicle,
+    insertSnapshotBetween, mountSquad, normalHeading, placeVehicle, removeFeature, removeVehicle, setCrewDismounted,
+    setSquads, toggleSquad, turnVehicle, updateSnapshot, withdrawVehicle,
 } from './edits'
 import type {Board} from './model'
 import {applyOperations, type Operation} from './operations'
@@ -220,5 +220,33 @@ describe('turning vehicles', () => {
     it('turns only vehicles on scene', () => {
         expect(turnVehicle(board, snapshotId, vehicleId, 10)).toEqual([])
         expect(turnVehicle(board, snapshotId, 'unknown', 10)).toEqual([])
+    })
+})
+
+describe('crew on the map', () => {
+    it('dismounts a seated squad and mounts a dismounted one', () => {
+        apply(placeVehicle(board, snapshotId, vehicleId, [52.5, 13.4]))
+        const attack = squadIds()[1]!
+        apply(toggleSquad(board, snapshotId, attack))
+        expect(board.snapshots[snapshotId]!.squads[attack]).toBeDefined()
+        apply(toggleSquad(board, snapshotId, attack))
+        expect(board.snapshots[snapshotId]!.squads[attack]).toBeUndefined()
+    })
+
+    it('dismounts and mounts the whole crew, leaving those already so alone', () => {
+        apply(placeVehicle(board, snapshotId, vehicleId, [52.5, 13.4]))
+        const first = squadIds()[0]!
+        apply(dismountSquad(board, snapshotId, first))
+        const before = board.snapshots[snapshotId]!.squads[first]
+        apply(setCrewDismounted(board, snapshotId, vehicleId, true))
+        expect(Object.keys(board.snapshots[snapshotId]!.squads).sort()).toEqual([...squadIds()].sort())
+        expect(board.snapshots[snapshotId]!.squads[first]).toEqual(before)
+        apply(setCrewDismounted(board, snapshotId, vehicleId, false))
+        expect(board.snapshots[snapshotId]!.squads).toEqual({})
+    })
+
+    it('does nothing for unknown vehicles or snapshots', () => {
+        expect(setCrewDismounted(board, snapshotId, 'unknown', true)).toEqual([])
+        expect(toggleSquad(board, 'unknown', squadIds()[0]!)).toEqual([])
     })
 })

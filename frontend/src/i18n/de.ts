@@ -15,6 +15,10 @@ export default {
         edit: 'Bearbeiten',
         delete: 'Löschen',
     },
+    crewMenu: {
+        close: 'Menü schließen',
+        noCrew: 'Keine Besatzung eingetragen',
+    },
     search: {
         label: 'Adresse suchen',
         placeholder: 'Adresse oder Ort suchen',

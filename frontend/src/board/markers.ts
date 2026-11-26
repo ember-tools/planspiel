@@ -1,8 +1,8 @@
-import {baseOf, formatStrength, squadFunction} from '../catalog'
+import {baseOf, formatStrength} from '../catalog'
 import {SYMBOL_WIDTH, escapeSvg, markSymbol} from '@emberbox/ui'
 import {squadSymbol, vehicleSymbol} from '../symbols/units'
 import {t} from '../i18n'
-import {crewStrength} from './edits'
+import {crewStrength, squadLabel} from './edits'
 import type {Board, Feature, Squad, Vehicle} from './model'
 
 const SYMBOL_AT_ZOOM_17 = 48
@@ -91,8 +91,7 @@ export function vehicleMarker(board: Board, snapshotId: string, vehicle: Vehicle
 
 /** The marker of a dismounted squad: its symbol, its strength and the vehicle it belongs to. */
 export function squadMarker(vehicle: Vehicle, squad: Squad, selected: boolean): MarkerContent {
-    const name = squadFunction(squad.function).short
-    return marker(squadSymbol(squad.function), [`${name} (${squad.strength})`, vehicle.callsign], selected)
+    return marker(squadSymbol(squad.function), [squadLabel(squad), vehicle.callsign], selected)
 }
 
 /** The marker of a mark or a text on the map. */

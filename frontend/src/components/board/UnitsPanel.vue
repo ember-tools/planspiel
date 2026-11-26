@@ -2,7 +2,7 @@
 import {TacticalSymbol, unitSymbolTree, useConfirm} from '@emberbox/ui'
 import {computed, ref} from 'vue'
 import {formatStrength, squadFunction, typeInRegion} from '../../catalog'
-import {crewStrength, dismountSquad, mountSquad, removeVehicle, withdrawVehicle} from '../../board/edits'
+import {crewOf, crewStrength, removeVehicle, setCrewDismounted, toggleSquad, withdrawVehicle} from '../../board/edits'
 import {VEHICLE_DRAG_TYPE} from '../../board/map-tools'
 import type {LatLng, Vehicle} from '../../board/model'
 import {boardState, commit, currentSnapshot, select, useTool} from '../../board/store'
@@ -23,10 +23,6 @@ const editable = computed(() => !boardState.readOnly)
 
 const vehicles = computed(() => Object.values(board.value?.vehicles ?? {}).sort((left, right) => left.order - right.order))
 
-function squadsOf(vehicle: Vehicle) {
-  return Object.values(vehicle.squads).sort((left, right) => left.order - right.order)
-}
-
 function placement(vehicle: Vehicle) {
   return snapshot.value?.vehicles[vehicle.id]
 }
@@ -40,7 +36,7 @@ function isSelected(kind: 'vehicle' | 'squad', id: string): boolean {
 }
 
 function isExpanded(vehicle: Vehicle): boolean {
-  return isSelected('vehicle', vehicle.id) || squadsOf(vehicle).some(squad => isSelected('squad', squad.id))
+  return isSelected('vehicle', vehicle.id) || crewOf(vehicle).some(squad => isSelected('squad', squad.id))
 }
 
 function strengthLine(vehicle: Vehicle): string {
@@ -76,20 +72,18 @@ function startDrag(event: DragEvent, vehicle: Vehicle): void {
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
 }
 
-function toggleSquad(squadId: string): void {
+function switchSquad(squadId: string): void {
   const current = board.value
   const shown = snapshot.value
   if (!current || !shown) return
-  commit(isDismounted(squadId) ? mountSquad(shown.id, squadId) : dismountSquad(current, shown.id, squadId))
+  commit(toggleSquad(current, shown.id, squadId))
 }
 
 function setAllDismounted(vehicle: Vehicle, dismounted: boolean): void {
   const current = board.value
   const shown = snapshot.value
   if (!current || !shown) return
-  commit(squadsOf(vehicle)
-      .filter(squad => isDismounted(squad.id) !== dismounted)
-      .flatMap(squad => dismounted ? dismountSquad(current, shown.id, squad.id) : mountSquad(shown.id, squad.id)))
+  commit(setCrewDismounted(current, shown.id, vehicle.id, dismounted))
 }
 
 function withdraw(vehicle: Vehicle): void {
@@ -148,8 +142,8 @@ function actions(vehicle: Vehicle) {
           </UDropdownMenu>
         </div>
 
-        <div v-if="isExpanded(vehicle) && squadsOf(vehicle).length" class="flex flex-col gap-1 border-t border-default p-2">
-          <div v-for="squad in squadsOf(vehicle)" :key="squad.id"
+        <div v-if="isExpanded(vehicle) && crewOf(vehicle).length" class="flex flex-col gap-1 border-t border-default p-2">
+          <div v-for="squad in crewOf(vehicle)" :key="squad.id"
                class="flex items-center gap-2 rounded-sm px-1 py-0.5"
                :class="isSelected('squad', squad.id) ? 'bg-elevated' : ''">
             <button type="button" class="grow cursor-pointer text-left text-sm" @click="focusSquad(squad.id)">
@@ -159,7 +153,7 @@ function actions(vehicle: Vehicle) {
             <UButton v-if="editable" size="xs" color="neutral" variant="outline" :disabled="!placement(vehicle)"
                      :icon="isDismounted(squad.id) ? 'i-lucide-log-in' : 'i-lucide-log-out'"
                      :label="isDismounted(squad.id) ? t('units.mount') : t('units.dismount')"
-                     @click="toggleSquad(squad.id)"/>
+                     @click="switchSquad(squad.id)"/>
           </div>
           <div v-if="editable && placement(vehicle)" class="mt-1 flex gap-2">
             <UButton size="xs" color="neutral" variant="ghost" :label="t('units.dismountAll')"

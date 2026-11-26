@@ -1,4 +1,4 @@
-import {strength, type SquadTemplate, type Strength} from '../catalog'
+import {squadFunction, strength, type SquadTemplate, type Strength} from '../catalog'
 import {addMinutes, minutesBetween, newId} from './document'
 import type {Board, DrawnFeature, Feature, LatLng, Snapshot, Squad, Vehicle} from './model'
 import {copyOf, remove, set, type Operation} from './operations'
@@ -113,6 +113,16 @@ export function withdrawVehicle(board: Board, snapshotId: string, vehicleId: str
     ]
 }
 
+/** The squads of a vehicle in crew order. */
+export function crewOf(vehicle: Vehicle): Squad[] {
+    return Object.values(vehicle.squads).sort((left, right) => left.order - right.order)
+}
+
+/** A squad named by its function with its strength, such as "AT (2)". */
+export function squadLabel(squad: Squad): string {
+    return `${squadFunction(squad.function).short} (${squad.strength})`
+}
+
 /** The vehicle a squad belongs to. */
 export function vehicleOfSquad(board: Board, squadId: string): Vehicle | undefined {
     return Object.values(board.vehicles).find(vehicle => Object.hasOwn(vehicle.squads, squadId))
@@ -134,6 +144,23 @@ export function dismountSquad(board: Board, snapshotId: string, squadId: string)
 /** Lets a squad mount its vehicle again. */
 export function mountSquad(snapshotId: string, squadId: string): Operation[] {
     return [remove(['snapshots', snapshotId, 'squads', squadId])]
+}
+
+/** Dismounts a squad sitting in its vehicle, or mounts one that has dismounted. */
+export function toggleSquad(board: Board, snapshotId: string, squadId: string): Operation[] {
+    const snapshot = board.snapshots[snapshotId]
+    if (!snapshot) return []
+    return Object.hasOwn(snapshot.squads, squadId) ? mountSquad(snapshotId, squadId) : dismountSquad(board, snapshotId, squadId)
+}
+
+/** Dismounts every squad of a vehicle, or mounts every one, leaving those already so as they are. */
+export function setCrewDismounted(board: Board, snapshotId: string, vehicleId: string, dismounted: boolean): Operation[] {
+    const snapshot = board.snapshots[snapshotId]
+    const vehicle = board.vehicles[vehicleId]
+    if (!snapshot || !vehicle) return []
+    return crewOf(vehicle)
+        .filter(squad => Object.hasOwn(snapshot.squads, squad.id) !== dismounted)
+        .flatMap(squad => dismounted ? dismountSquad(board, snapshotId, squad.id) : mountSquad(snapshotId, squad.id))
 }
 
 /** Moves a dismounted squad. */
