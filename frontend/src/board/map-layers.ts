@@ -3,6 +3,8 @@ import {onBeforeUnmount, watchEffect} from 'vue'
 import {ANIMATION_MS, animate, between, betweenLines} from './animation'
 import {drawFeature, moveSquad, placeVehicle, vehicleOfSquad} from './edits'
 import {shapePoints, toLatLng} from './geometry'
+import {betweenFrames, cornersOf, frameOf, isRectangle} from './rectangle'
+import {editRectangle, type RectangleEditor} from './rectangle-editor'
 import {featureMarker, squadMarker, symbolSize, vehicleMarker, type MarkerContent} from './markers'
 import type {Feature, LatLng} from './model'
 import {boardState, commit, currentSnapshot, select, viewerSettings, type Selection} from './store'
@@ -41,6 +43,8 @@ interface ShownShape {
     key: string
     editing: boolean
     label: string
+    style: string
+    rectangle?: RectangleEditor
 }
 
 function samePosition(layer: L.Marker, [lat, lng]: LatLng): boolean {
@@ -258,29 +262,59 @@ export function useBoardLayers(map: L.Map): void {
         const current = shapePoints(shown.layer)
         if (JSON.stringify(current) === JSON.stringify(points) || moving.get(key)?.target === JSON.stringify(points)) return
         stopMoving(key)
-        if (shown.editing) shown.layer.pm?.disable()
+        const wasEditing = shown.editing
+        stopEditing(shown)
         const finish = () => {
             shown.layer.setLatLngs(points)
             if (shown.label) shown.layer.openTooltip()
-            if (shown.editing) shown.layer.pm?.enable({allowSelfIntersection: true})
+            if (wasEditing) startEditing(id, shown)
             moving.delete(key)
         }
         if (!switching || current.length !== points.length) {
             finish()
             return
         }
-        const stop = animate(share => shown.layer.setLatLngs(betweenLines(current, points, share)), finish)
+        const turning = shown.style === 'staging' && isRectangle(current) && isRectangle(points)
+        const from = turning ? frameOf(current) : null
+        const to = turning ? frameOf(points) : null
+        const stop = animate(share => shown.layer.setLatLngs(from && to
+            ? cornersOf(betweenFrames(from, to, share))
+            : betweenLines(current, points, share)), finish)
         moving.set(key, {target: JSON.stringify(points), stop})
     }
 
+    /**
+     * Lets a shape be edited: a staging area with handles to move, resize and turn it as a
+     * rectangle, any other line or area point by point with Geoman.
+     */
+    function startEditing(id: string, shown: ShownShape): void {
+        if (shown.editing) return
+        shown.editing = true
+        const points = shapePoints(shown.layer)
+        if (shown.style !== 'staging' || !isRectangle(points)) {
+            shown.layer.pm?.enable({allowSelfIntersection: true})
+            return
+        }
+        shown.rectangle = editRectangle(map, shown.layer, points, corners => {
+            const snapshot = currentSnapshot.value
+            const drawn = snapshot?.features[id]
+            if (snapshot && drawn) commit(drawFeature(snapshot.id, id, {...drawn, points: corners}))
+        })
+    }
+
+    function stopEditing(shown: ShownShape): void {
+        if (!shown.editing) return
+        shown.editing = false
+        shown.layer.pm?.disable()
+        shown.rectangle?.remove()
+        shown.rectangle = undefined
+    }
+
     /** Marks a shape as selected or not and lets it be edited while selected, keeping the layer. */
-    function markSelected(shown: ShownShape, selected: boolean): void {
+    function markSelected(id: string, shown: ShownShape, selected: boolean): void {
         shown.layer.getElement()?.classList.toggle('is-selected', selected)
-        const editing = selected && !boardState.readOnly
-        if (editing === shown.editing) return
-        if (editing) shown.layer.pm?.enable({allowSelfIntersection: true})
-        else shown.layer.pm?.disable()
-        shown.editing = editing
+        if (selected && !boardState.readOnly) startEditing(id, shown)
+        else stopEditing(shown)
     }
 
     /** Shows the label of a line or area on the shape itself, or none. */
@@ -299,7 +333,7 @@ export function useBoardLayers(map: L.Map): void {
             if (wanted.has(id)) continue
             stopMoving(`shape:${id}`)
             shapes.delete(id)
-            shown.layer.pm?.disable()
+            stopEditing(shown)
             if (switching) fadeOut(shown.layer, shapeGroup)
             else shapeGroup.removeLayer(shown.layer)
         }
@@ -307,23 +341,23 @@ export function useBoardLayers(map: L.Map): void {
             const key = JSON.stringify(want.feature)
             const shown = shapes.get(id)
             if (shown?.key === key) {
-                markSelected(shown, want.selected)
                 showLabel(shown, want.text)
                 reshape(id, shown, want.points, switching)
+                markSelected(id, shown, want.selected)
                 continue
             }
             if (shown) {
                 stopMoving(`shape:${id}`)
-                shown.layer.pm?.disable()
+                stopEditing(shown)
                 shapeGroup.removeLayer(shown.layer)
             }
             const layer = createShape(id, want)
             layer.addTo(shapeGroup)
             if (switching && !shown) layer.getElement()?.classList.add('is-entering')
-            const editing = want.selected && !boardState.readOnly
-            if (editing) layer.pm?.enable({allowSelfIntersection: true})
-            const added: ShownShape = {layer, key, editing, label: ''}
+            const style = want.feature.kind === 'area' || want.feature.kind === 'line' ? want.feature.style : ''
+            const added: ShownShape = {layer, key, editing: false, label: '', style}
             showLabel(added, want.text)
+            markSelected(id, added, want.selected)
             shapes.set(id, added)
         }
     }

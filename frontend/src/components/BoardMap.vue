@@ -125,6 +125,27 @@ onBeforeUnmount(() => {
   stroke-width: 4;
 }
 
+.board-handle {
+  border: 2px solid var(--color-steel-900);
+  background-color: var(--color-white);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-black) 35%, transparent);
+}
+
+.board-handle-corner {
+  cursor: nwse-resize;
+}
+
+.board-handle-rotate {
+  border-radius: 50%;
+  cursor: grab;
+}
+
+.board-handle-move {
+  border-radius: 50%;
+  background-color: var(--color-steel-900);
+  cursor: move;
+}
+
 .board-shape-label {
   padding: 1px 6px;
   font-family: var(--font-condensed);

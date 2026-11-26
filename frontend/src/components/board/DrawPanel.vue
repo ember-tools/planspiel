@@ -12,6 +12,9 @@ import TacticalSymbol from '../TacticalSymbol.vue'
 const confirm = useConfirm()
 
 
+/** The marks offered for placing; the staging area is drawn as a rectangle instead. */
+const PLACEABLE_MARKS = MARK_KINDS.filter(mark => mark !== 'staging')
+
 const editable = computed(() => !boardState.readOnly)
 const snapshot = computed(() => currentSnapshot.value)
 
@@ -33,6 +36,13 @@ const selectedText = computed({
 const features = computed(() => Object.values(boardState.board?.features ?? {})
     .filter(feature => snapshot.value && Object.hasOwn(snapshot.value.features, feature.id))
     .sort((left, right) => left.order - right.order))
+
+/** What to do with the tool in hand. */
+const hint = computed(() => {
+  const tool = boardState.tool
+  if (tool.kind === 'draw-area' && tool.style === 'staging') return t('draw.rectangleHint')
+  return tool.kind.startsWith('draw') ? t('draw.drawHint') : t('draw.placeHint')
+})
 
 function isActive(tool: Tool): boolean {
   return JSON.stringify(boardState.tool) === JSON.stringify(tool)
@@ -73,7 +83,7 @@ async function deleteEverywhere(feature: Feature): Promise<void> {
       <section class="flex flex-col gap-2">
         <h3 class="field-label m-0">{{ t('draw.marks') }}</h3>
         <div class="grid grid-cols-3 gap-2">
-          <UButton v-for="mark in MARK_KINDS" :key="mark" color="neutral"
+          <UButton v-for="mark in PLACEABLE_MARKS" :key="mark" color="neutral"
                    :variant="isActive({kind: 'place-mark', mark}) ? 'solid' : 'outline'"
                    class="flex h-auto min-w-0 flex-col items-center gap-1 p-1.5 text-[11px] leading-tight"
                    :title="t(`marks.${mark}`)" @click="toggle({kind: 'place-mark', mark})">
@@ -95,7 +105,8 @@ async function deleteEverywhere(feature: Feature): Promise<void> {
       <section class="flex flex-col gap-2">
         <h3 class="field-label m-0">{{ t('draw.areas') }}</h3>
         <div class="flex flex-wrap gap-2">
-          <UButton v-for="style in AREA_STYLES" :key="style" size="sm" color="neutral" icon="i-lucide-pentagon"
+          <UButton v-for="style in AREA_STYLES" :key="style" size="sm" color="neutral"
+                   :icon="style === 'staging' ? 'i-lucide-rectangle-horizontal' : 'i-lucide-pentagon'"
                    :variant="isActive({kind: 'draw-area', style}) ? 'solid' : 'outline'"
                    :label="t(`areas.${style}`)" @click="toggle({kind: 'draw-area', style})"/>
         </div>
@@ -106,7 +117,7 @@ async function deleteEverywhere(feature: Feature): Promise<void> {
                  :variant="isActive({kind: 'place-text'}) ? 'solid' : 'outline'"
                  :label="t('draw.addText')" @click="toggle({kind: 'place-text'})"/>
         <p v-if="boardState.tool.kind !== 'select'" class="m-0 text-[13px] text-muted">
-          {{ boardState.tool.kind.startsWith('draw') ? t('draw.drawHint') : t('draw.placeHint') }}
+          {{ hint }}
         </p>
       </section>
     </template>
@@ -118,7 +129,7 @@ async function deleteEverywhere(feature: Feature): Promise<void> {
         <UInput v-else v-model.lazy="selectedText" class="w-full" :disabled="!editable"/>
       </UFormField>
       <p v-if="editable && (selected.kind === 'line' || selected.kind === 'area')" class="m-0 text-[13px] text-muted">
-        {{ t('draw.editHint') }}
+        {{ selected.kind === 'area' && selected.style === 'staging' ? t('draw.rectangleEditHint') : t('draw.editHint') }}
       </p>
       <div v-if="editable" class="flex flex-wrap gap-2">
         <UButton size="sm" color="neutral" variant="outline" icon="i-lucide-eraser" :label="t('draw.eraseHere')"

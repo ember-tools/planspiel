@@ -90,6 +90,8 @@ export default {
         placeHint: 'Klicke auf die Karte, um es zu setzen. Esc bricht ab.',
         drawHint: 'Klicke Punkt für Punkt; ein Doppelklick oder ein Klick auf den ersten Punkt beendet. Esc bricht ab.',
         editHint: 'Ziehe die Punkte auf der Karte, um die Form zu ändern.',
+        rectangleHint: 'Klicke auf zwei gegenüberliegende Ecken des Bereitstellungsraums. Esc bricht ab.',
+        rectangleEditHint: 'Ziehe an den Ecken, um die Größe zu ändern, am Punkt darüber, um zu drehen, und in der Mitte, um zu verschieben.',
         eraseHere: 'Nur in diesem Lagestand entfernen',
         deleteEverywhere: 'Überall löschen',
         deleteQuestion: '{name} löschen?',
