@@ -52,6 +52,12 @@ onBeforeUnmount(() => {
   cursor: crosshair;
 }
 
+.board-found-place {
+  fill: none;
+  stroke: var(--color-signal-500);
+  stroke-width: 4;
+}
+
 .board-map.is-placing .board-icon,
 .board-map.is-placing .board-shape {
   pointer-events: none;

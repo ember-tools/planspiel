@@ -10,6 +10,8 @@ from starlette.responses import FileResponse
 
 from data.boards import BoardStore
 from services.boards import BoardHub, CreationLimit
+from services.geocode import AddressSearch, search_client
+from services.geocode import router as geocode_router
 from services.tiles import TileCache, tile_client
 from services.tiles import router as tile_router
 from web.app import router
@@ -37,6 +39,8 @@ async def lifespan(application: FastAPI):
     client = tile_client()
     cache = TileCache(settings.tile_dir, client, settings.tile_retention_days * 86400.0, settings.tile_max_bytes)
     application.state.tile_cache = cache
+    searching = search_client()
+    application.state.address_search = AddressSearch(searching)
     boards = BoardStore(settings.board_file)
     application.state.board_hub = BoardHub(boards, settings.board_max_bytes)
     application.state.creation_limit = CreationLimit(settings.board_creations_per_hour)
@@ -51,6 +55,7 @@ async def lifespan(application: FastAPI):
     await application.state.board_hub.close_all()
     await cache.close()
     await client.aclose()
+    await searching.aclose()
     boards.close()
 
 
@@ -66,6 +71,7 @@ app.add_middleware(
 
 app.include_router(router)
 app.include_router(tile_router)
+app.include_router(geocode_router)
 
 
 @app.get("/api/health")

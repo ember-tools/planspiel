@@ -15,6 +15,14 @@ export default {
         edit: 'Bearbeiten',
         delete: 'Löschen',
     },
+    search: {
+        label: 'Adresse suchen',
+        placeholder: 'Adresse oder Ort suchen',
+        hint: 'Mindestens drei Zeichen eingeben',
+        searching: 'Suche läuft …',
+        none: 'Nichts gefunden',
+        unavailable: 'Die Suche ist gerade nicht verfügbar',
+    },
     board: {
         untitled: 'Unbenannte Platte',
         present: 'Präsentieren',

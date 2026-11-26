@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import L from 'leaflet'
 import {computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch} from 'vue'
 import {useRoute} from 'vue-router'
 import BoardMap from '../components/BoardMap.vue'
+import AddressSearch from '../components/board/AddressSearch.vue'
 import BoardPanel from '../components/board/BoardPanel.vue'
 import DrawPanel from '../components/board/DrawPanel.vue'
 import SnapshotPanel from '../components/board/SnapshotPanel.vue'
 import SnapshotTimeline from '../components/board/SnapshotTimeline.vue'
 import SyncStatus from '../components/board/SyncStatus.vue'
 import UnitsPanel from '../components/board/UnitsPanel.vue'
+import type {Place} from '../api/geocode'
 import {usePresentation} from '../composables/usePresentation'
 import {setBoardField} from '../board/edits'
 import {inControl} from '../board/keys'
@@ -68,6 +71,18 @@ function focus(position: LatLng): void {
   mapView.value?.map?.panTo(position)
 }
 
+const FOUND_ZOOM = 18
+const FOUND_MARK_MS = 4000
+
+/** Shows a found place: the map moves there and a ring marks it for a few seconds. */
+function showPlace(place: Place): void {
+  const map = mapView.value?.map
+  if (!map) return
+  map.setView([place.lat, place.lon], Math.max(map.getZoom(), FOUND_ZOOM))
+  const ring = L.circleMarker([place.lat, place.lon], {radius: 18, className: 'board-found-place', interactive: false}).addTo(map)
+  setTimeout(() => ring.remove(), FOUND_MARK_MS)
+}
+
 function saveView(): void {
   const map = mapView.value?.map
   if (!map) return
@@ -86,10 +101,17 @@ function saveView(): void {
     <div class="board-stage-main flex min-w-0 flex-col gap-2 lg:h-[calc(100dvh-11rem)]">
       <div class="board-stage-map relative h-[55dvh] min-h-80 overflow-hidden rounded-(--ui-radius) border border-default lg:h-auto lg:grow">
         <BoardMap ref="mapView" :key="boardState.generation" :view="boardState.board.view"/>
-        <div v-if="presenting" class="absolute top-2 right-2 z-10 flex gap-1">
-          <UButton size="sm" color="neutral" variant="solid" :icon="sidebar ? 'i-lucide-panel-right-close' : 'i-lucide-panel-right-open'"
-                   :label="sidebar ? t('board.hideSidebar') : t('board.showSidebar')" :title="t('board.sidebarKey')" @click="toggleSidebar"/>
-          <UButton size="sm" color="neutral" variant="solid" icon="i-lucide-minimize" :label="t('board.endPresentation')" @click="endPresentation"/>
+        <div class="pointer-events-none absolute top-2 right-2 left-12 z-10 flex items-start justify-between gap-2">
+          <AddressSearch class="pointer-events-auto" @found="showPlace"/>
+          <div v-if="presenting" class="pointer-events-auto flex shrink-0 gap-1">
+            <UButton size="sm" color="neutral" variant="solid" :icon="sidebar ? 'i-lucide-panel-right-close' : 'i-lucide-panel-right-open'"
+                     :aria-label="sidebar ? t('board.hideSidebar') : t('board.showSidebar')" :title="t('board.sidebarKey')" @click="toggleSidebar">
+              <span class="hidden xl:inline">{{ sidebar ? t('board.hideSidebar') : t('board.showSidebar') }}</span>
+            </UButton>
+            <UButton size="sm" color="neutral" variant="solid" icon="i-lucide-minimize" :aria-label="t('board.endPresentation')" @click="endPresentation">
+              <span class="hidden xl:inline">{{ t('board.endPresentation') }}</span>
+            </UButton>
+          </div>
         </div>
       </div>
       <SnapshotTimeline/>

@@ -83,6 +83,7 @@ usePage({
         'Mit „Kartenausschnitt als Start merken“ legst du fest, welchen Ausschnitt die Platte beim Öffnen zeigt.',
         'Eine geteilte Platte liegt auf dem Server, bis sie über den Link zum Bearbeiten gelöscht wird. Wer einen der Links hat, kann sie öffnen.',
         'Die Kartenkacheln kommen von OpenStreetMap über den Server der Planspielplatte, dein Browser verbindet sich nicht mit OpenStreetMap.',
+        'Die Adresssuche oben links auf der Karte springt zum gewählten Ort. Gesucht wird bei Photon von Komoot, aber über den Server der Planspielplatte: Komoot sieht deine IP-Adresse nicht, und der Server speichert keine Suchbegriffe dauerhaft.',
       ]"/>
     </HelpSection>
   </HelpPage>

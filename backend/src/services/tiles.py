@@ -33,6 +33,8 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
+from services.budget import TokenBudget
+
 UPSTREAM = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 MIN_ZOOM = 10
 MAX_ZOOM = 19
@@ -63,40 +65,6 @@ class TileUnavailable(Exception):
 
 class TileRateLimited(Exception):
     """A tile that would have to be fetched while the miss budget is used up."""
-
-
-class MissBudget:
-    """Token buckets that limit how many tiles may be fetched upstream.
-
-    Every cache miss takes a token from the bucket shared by everyone and one from the bucket of
-    the requesting client. Buckets refill continuously up to their burst size. A map zooming in
-    through several levels at once needs a few hundred new tiles and stays inside the burst, while
-    the slow refill keeps the sustained rate far below anything that could count as bulk
-    downloading; a loop walking the whole box, millions of tiles, does not get far.
-    """
-
-    def __init__(self, clock: Callable[[], float] = time.time) -> None:
-        """Start with full buckets."""
-        self.clock = clock
-        self._buckets: dict[str, tuple[float, float]] = {}
-
-    def take(self, client: str) -> bool:
-        """Take a token for `client` and for everyone, or neither when either bucket is empty."""
-        now = self.clock()
-        everyone = self._level("*", GLOBAL_MISS_BURST, GLOBAL_MISSES_PER_SECOND, now)
-        own = self._level(f"client:{client}", CLIENT_MISS_BURST, CLIENT_MISSES_PER_SECOND, now)
-        if everyone < 1 or own < 1:
-            return False
-        self._buckets["*"] = (everyone - 1, now)
-        self._buckets[f"client:{client}"] = (own - 1, now)
-        if len(self._buckets) > 10_000:
-            self._buckets = {key: value for key, value in self._buckets.items() if now - value[1] < 3600}
-        return True
-
-    def _level(self, key: str, burst: float, rate: float, now: float) -> float:
-        """Return how many tokens a bucket holds right now."""
-        level, since = self._buckets.get(key, (burst, now))
-        return min(burst, level + (now - since) * rate)
 
 
 @dataclass
@@ -273,7 +241,9 @@ class TileCache:
         self._running: dict[tuple[int, int, int], asyncio.Task[Tile]] = {}
         self._background: set[asyncio.Task[None]] = set()
         self._failed_until: dict[tuple[int, int, int], float] = {}
-        self._budget = MissBudget(clock)
+        self._budget = TokenBudget(
+            (GLOBAL_MISS_BURST, GLOBAL_MISSES_PER_SECOND), (CLIENT_MISS_BURST, CLIENT_MISSES_PER_SECOND), clock
+        )
         self._fetching = asyncio.Semaphore(MAX_CONCURRENT_FETCHES)
         self._closing = False
         self._sweeping = threading.Lock()
