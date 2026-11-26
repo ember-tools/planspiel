@@ -4,7 +4,8 @@ import 'leaflet/dist/leaflet.css'
 import {onBeforeUnmount, onMounted, shallowRef, useTemplateRef} from 'vue'
 import BoardLayers from './BoardLayers.vue'
 import type {MapView} from '../board/model'
-import {MAP_LIMITS, TILE_LAYER_OPTIONS, TILE_URL} from '../scripts/tiles'
+import {createTileLayer} from '../scripts/tile-layer'
+import {MAP_LIMITS} from '../scripts/tiles'
 
 /** The Leaflet map of a board. The board's layers and tools attach once the map exists. */
 const props = defineProps<{ view: MapView }>()
@@ -18,7 +19,7 @@ onMounted(() => {
   if (!container.value) return
   const created = L.map(container.value, {...MAP_LIMITS, zoomControl: true, doubleClickZoom: false, keyboard: false})
       .setView(props.view.center, props.view.zoom)
-  L.tileLayer(TILE_URL, TILE_LAYER_OPTIONS).addTo(created)
+  createTileLayer().addTo(created)
   map.value = created
 })
 

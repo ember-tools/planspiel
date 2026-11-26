@@ -33,3 +33,16 @@ export const TILE_LAYER_OPTIONS = {
     bounds: TILE_BOUNDS,
     attribution: TILE_ATTRIBUTION,
 }
+
+/** How often a tile that failed to load is asked for again, and how long the first wait is: a
+ * little longer than the `Retry-After` the server sends with a refusal. */
+export const TILE_RETRIES = 3
+export const TILE_RETRY_DELAY = 5000
+
+/**
+ * The delay before retry number `attempt` (counting from 1): doubling each time, so a burst of
+ * refused tiles spreads out instead of being refused again all at once.
+ */
+export function retryDelay(attempt: number): number {
+    return TILE_RETRY_DELAY * 2 ** (attempt - 1)
+}

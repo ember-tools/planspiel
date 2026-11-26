@@ -118,15 +118,22 @@ class TileTest(unittest.IsolatedAsyncioTestCase):
         await asyncio.gather(*self.cache._background)
         self.assertEqual(asked, len(self.upstream.requests))
 
+    async def test_zooming_through_several_levels_fits_the_budget(self):
+        z, x, y = CENTRE
+        for level in range(5):
+            for column in range(7):
+                for line in range(5):
+                    await self.cache.get(z + level - 2, (x >> 2 << level) + column, (y >> 2 << level) + line, "1.2.3.4")
+
     async def test_misses_beyond_the_client_budget_are_refused_without_asking(self):
         z, x, y = CENTRE
         for offset in range(CLIENT_MISS_BURST):
             await self.cache.get(z, x + offset % 20, y + offset // 20, "1.2.3.4")
         asked = len(self.upstream.requests)
         with self.assertRaises(TileRateLimited):
-            await self.cache.get(z, x, y + 10, "1.2.3.4")
+            await self.cache.get(z, x, y + 25, "1.2.3.4")
         self.assertEqual(asked, len(self.upstream.requests))
-        self.assertEqual(b"PNG1", await self.cache.get(z, x, y + 10, "5.6.7.8"))
+        self.assertEqual(b"PNG1", await self.cache.get(z, x, y + 25, "5.6.7.8"))
         self.assertEqual(b"PNG1", await self.cache.get(z, x, y, "1.2.3.4"))
 
 
@@ -231,7 +238,8 @@ class RouteTest(unittest.TestCase):
         app = FastAPI()
         app.include_router(tiles.router)
         self.cache = app.state.tile_cache = TileCache(
-            Path(self.folder.name), httpx.AsyncClient(transport=httpx.MockTransport(self.upstream)), RETENTION, MAX_BYTES
+            Path(self.folder.name), httpx.AsyncClient(transport=httpx.MockTransport(self.upstream)), RETENTION, MAX_BYTES,
+            Clock(),
         )
         self.client = TestClient(app)
 
@@ -258,7 +266,7 @@ class RouteTest(unittest.TestCase):
         codes = [self.client.get(f"/tiles/{z}/{x + n % 20}/{y + n // 20}.png").status_code
                  for n in range(CLIENT_MISS_BURST + 1)]
         self.assertEqual(429, codes[-1])
-        response = self.client.get(f"/tiles/{z}/{x}/{y + 9}.png")
+        response = self.client.get(f"/tiles/{z}/{x}/{y + 25}.png")
         self.assertEqual("10", response.headers["retry-after"])
 
 
