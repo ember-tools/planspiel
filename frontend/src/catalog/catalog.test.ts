@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {BASE_TYPES, REGIONS, defaultSquads, findType, formatStrength, strength, symbolText, typeInRegion} from './index'
+import {BASE_TYPES, PREFERRED, REGIONS, defaultSquads, findType, formatStrength, region, strength, symbolText, typeInRegion} from './index'
 
 describe('regions', () => {
     it('give every type a unique id', () => {
@@ -70,5 +70,29 @@ describe('symbolText', () => {
         expect(symbolText('GW SAN')).toBe('GW SAN')
         expect(symbolText('ELW 1 C')).toBe('ELW 1')
         expect(symbolText('AB Atemschutz')).toBe('AB')
+    })
+})
+
+describe('vehicles shown in another region', () => {
+    it('keep their kind and size in every region', () => {
+        for (const region of REGIONS) {
+            const engine = typeInRegion('be:LHF 20/12', region.id)!.name
+            const tanker = typeInRegion('be:TLF 4000', region.id)!.name
+            const ladder = typeInRegion('be:DLK 23-12', region.id)!.name
+            expect(engine, region.id).toMatch(/LF|LHF/)
+            expect(tanker, region.id).toMatch(/TLF/)
+            expect(ladder, region.id).toMatch(/23|30/)
+        }
+    })
+})
+
+describe('preferred types of a state', () => {
+    it('all exist in that state with the base they stand for', () => {
+        for (const [regionId, entries] of Object.entries(PREFERRED)) {
+            if (regionId === '*') continue
+            for (const [base, name] of Object.entries(entries)) {
+                expect(region(regionId).types.some(type => type.name === name && type.base === base), `${regionId} ${name}`).toBe(true)
+            }
+        }
     })
 })

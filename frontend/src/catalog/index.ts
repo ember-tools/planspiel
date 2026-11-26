@@ -10,9 +10,11 @@ export type * from './model'
 
 /**
  * The type a region uses for each base type when a vehicle of another region's type is shown
- * there. A base type missing here falls back to the region's first type with that base.
+ * there. A state's own entry wins, then the general one under '*', then the region's first type
+ * with that base. States whose spelling differs from the norm need their own entries, or a
+ * vehicle would show as whatever comes first, such as a crash tender for a TLF 4000.
  */
-const PREFERRED: Record<string, Record<string, string>> = {
+export const PREFERRED: Record<string, Record<string, string>> = {
     BE: {
         'engine-group': 'LHF 20/12',
         'engine-squad': 'LHF',
@@ -30,6 +32,25 @@ const PREFERRED: Record<string, Record<string, string>> = {
         'ambulance': 'RTW',
         'intensive-care': 'ITW',
     },
+    NW: {
+        'engine-group': 'HLF20',
+        'tanker': 'TLF3000',
+        'aerial': 'DLK23',
+        'rescue': 'RW',
+        'command-1': 'ELW1',
+        'command-post': 'ELW2',
+        'equipment': 'GW-L2',
+        'swap-body-carrier': 'WLF',
+    },
+    HE: {'aerial': 'DLAK 23/12', 'swap-body-carrier': 'WLF 18/5900'},
+    BW: {'aerial': 'DLK 23-12'},
+    BY: {'aerial': 'DLK 23/12', 'swap-body-carrier': 'WLF kurz'},
+    ST: {'aerial': 'DLK 23/12', 'swap-body-carrier': 'WLF 18 t'},
+    NI: {'aerial': 'DLAK 23/12', 'swap-body-carrier': 'WLF 18 t'},
+    SH: {'aerial': 'DLK 23/12', 'swap-body-carrier': 'WLF-18'},
+    TH: {'aerial': 'DLK 23/12', 'swap-body-carrier': 'WLF 18'},
+    SL: {'aerial': 'DLK 23-12'},
+    RP: {'aerial': 'DLK 23-12'},
     '*': {
         'engine-group': 'HLF 20',
         'engine-squad': 'MLF',
@@ -68,7 +89,7 @@ export function typeInRegion(typeId: string, regionId: string): RegionalType | u
     const own = findType(typeId)
     const target = region(regionId)
     if (!own || target.types.some(type => type.id === typeId)) return own
-    const preferred = (PREFERRED[target.id] ?? PREFERRED['*'])[own.base]
+    const preferred = PREFERRED[target.id]?.[own.base] ?? PREFERRED['*']![own.base]
     return target.types.find(type => type.base === own.base && type.name === preferred)
         ?? target.types.find(type => type.base === own.base)
         ?? own
