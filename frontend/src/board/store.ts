@@ -145,3 +145,45 @@ export function replaceLocalBoard(board: Board): void {
     showBoard(board)
     saveLocalSoon()
 }
+
+const ANIMATE_KEY = 'planspiel.animate'
+
+/** Whether this viewer wants switching snapshots animated: their saved choice, else no reduced motion. */
+function animationPreference(): boolean {
+    let stored: string | null = null
+    try {
+        stored = localStorage.getItem(ANIMATE_KEY)
+    } catch (error) {
+        console.warn('The animation setting could not be read in this browser', error)
+    }
+    if (stored !== null) return stored === 'true'
+    return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
+
+/** The viewer's animation choice, read when the board view first needs it. */
+export const viewerSettings = reactive({animate: true})
+
+/** Reads the viewer's settings from this browser. */
+export function loadViewerSettings(): void {
+    viewerSettings.animate = animationPreference()
+}
+
+/** Turns the animation between snapshots on or off for this viewer and remembers it in this browser. */
+export function setAnimate(animate: boolean): void {
+    viewerSettings.animate = animate
+    try {
+        localStorage.setItem(ANIMATE_KEY, String(animate))
+    } catch (error) {
+        console.warn('The animation setting could not be saved in this browser', error)
+    }
+}
+
+/** Shows the snapshot before or after the current one in time order, if there is one. */
+export function stepSnapshot(direction: -1 | 1): void {
+    const board = boardState.board
+    const current = currentSnapshot.value
+    if (!board || !current) return
+    const ordered = sortedSnapshots(board)
+    const next = ordered[ordered.findIndex(snapshot => snapshot.id === current.id) + direction]
+    if (next) showSnapshot(next.id)
+}

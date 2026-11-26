@@ -1,10 +1,11 @@
 import L from 'leaflet'
 import {onBeforeUnmount, watchEffect} from 'vue'
-import {drawFeature, moveSquad, placeVehicle} from './edits'
+import {ANIMATION_MS, animate, between, betweenLines} from './animation'
+import {drawFeature, moveSquad, placeVehicle, vehicleOfSquad} from './edits'
 import {shapePoints, toLatLng} from './geometry'
 import {featureMarker, squadMarker, symbolSize, vehicleMarker, type MarkerContent} from './markers'
 import type {Feature, LatLng} from './model'
-import {boardState, commit, currentSnapshot, select, type Selection} from './store'
+import {boardState, commit, currentSnapshot, select, viewerSettings, type Selection} from './store'
 
 /** One marker the map should show. */
 interface WantedMarker {
@@ -123,6 +124,11 @@ function shapeClass(feature: Feature, selected: boolean): string {
  * are updated in place rather than rebuilt, so a marker being dragged is never replaced under the
  * pointer. Dragging a marker or editing a shape commits the new position. Symbols grow and shrink
  * with the zoom through the `--board-symbol` width on the map container.
+ *
+ * When the shown snapshot changes and the viewer has animation on, everything moves from where it
+ * was to where it is now: a squad that dismounts walks out of its vehicle, one that mounts walks
+ * back in, lines and areas with the same number of points reshape, and whatever appears or goes
+ * away fades. Any other change, such as an edit, takes effect at once.
  */
 export function useBoardLayers(map: L.Map): void {
     const markerGroup = L.layerGroup().addTo(map)
@@ -130,35 +136,91 @@ export function useBoardLayers(map: L.Map): void {
     const markers = new Map<string, ShownMarker>()
     const shapes = new Map<string, ShownShape>()
     const handlers = new Map<string, WantedMarker>()
+    const moving = new Map<string, {target: string, stop: () => void}>()
+    let shownSnapshotId: string | null = null
 
-    function syncMarkers(): void {
+    function stopMoving(key: string): void {
+        moving.get(key)?.stop()
+        moving.delete(key)
+    }
+
+    /** Moves a marker from where it is to a position over the animation time. */
+    function moveMarker(key: string, layer: L.Marker, to: LatLng): void {
+        stopMoving(key)
+        const from = toLatLng(layer.getLatLng())
+        const stop = animate(share => layer.setLatLng(between(from, to, share)), () => moving.delete(key))
+        moving.set(key, {target: JSON.stringify(to), stop})
+    }
+
+    /** Fades a layer out and removes it once the animation time is over. */
+    function fadeOut(layer: L.Layer, group: L.LayerGroup): void {
+        const element = (layer as L.Marker | L.Path).getElement?.()
+        element?.classList.add('is-leaving')
+        setTimeout(() => group.removeLayer(layer), ANIMATION_MS)
+    }
+
+    /** The vehicle marker key a squad marker belongs to. */
+    function vehicleKeyOf(key: string): string | null {
+        const board = boardState.board
+        if (!board || !key.startsWith('squad:')) return null
+        const vehicle = vehicleOfSquad(board, key.slice('squad:'.length))
+        return vehicle ? `vehicle:${vehicle.id}` : null
+    }
+
+    function createMarker(key: string, want: WantedMarker, position: LatLng): L.Marker {
+        const layer = L.marker(position, {
+            icon: L.divIcon({html: want.content.html, className: 'board-icon', iconSize: undefined, iconAnchor: [0, 0]}),
+            draggable: want.draggable,
+            keyboard: false,
+            autoPan: true,
+        })
+        layer.on('dragstart', () => stopMoving(key))
+        layer.on('dragend', () => handlers.get(key)?.onMove(toLatLng(layer.getLatLng())))
+        layer.on('click', () => {
+            const handler = handlers.get(key)
+            if (handler && boardState.tool.kind === 'select') select(handler.selection)
+        })
+        return layer.addTo(markerGroup)
+    }
+
+    function syncMarkers(switching: boolean): void {
         const wanted = wantedMarkers()
+        const before = new Map([...markers].map(([key, shown]) => [key, toLatLng(shown.layer.getLatLng())]))
         for (const [key, shown] of markers) {
             if (wanted.has(key)) continue
-            markerGroup.removeLayer(shown.layer)
+            stopMoving(key)
             markers.delete(key)
             handlers.delete(key)
+            if (!switching) {
+                markerGroup.removeLayer(shown.layer)
+                continue
+            }
+            const vehicleKey = vehicleKeyOf(key)
+            const into = vehicleKey ? wanted.get(vehicleKey)?.position : undefined
+            if (into) moveMarker(key, shown.layer, into)
+            fadeOut(shown.layer, markerGroup)
         }
         for (const [key, want] of wanted) {
             handlers.set(key, want)
             const shown = markers.get(key)
             if (!shown) {
-                const layer = L.marker(want.position, {
-                    icon: L.divIcon({html: want.content.html, className: 'board-icon', iconSize: undefined, iconAnchor: [0, 0]}),
-                    draggable: want.draggable,
-                    keyboard: false,
-                    autoPan: true,
-                })
-                layer.on('dragend', () => handlers.get(key)?.onMove(toLatLng(layer.getLatLng())))
-                layer.on('click', () => {
-                    const handler = handlers.get(key)
-                    if (handler && boardState.tool.kind === 'select') select(handler.selection)
-                })
-                layer.addTo(markerGroup)
+                const vehicleKey = vehicleKeyOf(key)
+                const from = switching && vehicleKey ? before.get(vehicleKey) : undefined
+                const layer = createMarker(key, want, from ?? want.position)
                 markers.set(key, {layer, html: want.content.html, draggable: want.draggable})
+                if (switching) {
+                    layer.getElement()?.classList.add('is-entering')
+                    if (from) moveMarker(key, layer, want.position)
+                }
                 continue
             }
-            if (!samePosition(shown.layer, want.position)) shown.layer.setLatLng(want.position)
+            const running = moving.get(key)
+            if (switching && !samePosition(shown.layer, want.position)) {
+                moveMarker(key, shown.layer, want.position)
+            } else if (running?.target !== JSON.stringify(want.position) && !samePosition(shown.layer, want.position)) {
+                stopMoving(key)
+                shown.layer.setLatLng(want.position)
+            }
             if (shown.html !== want.content.html) {
                 shown.layer.setIcon(L.divIcon({html: want.content.html, className: 'board-icon', iconSize: undefined, iconAnchor: [0, 0]}))
                 shown.html = want.content.html
@@ -188,30 +250,62 @@ export function useBoardLayers(map: L.Map): void {
         return layer
     }
 
-    function syncShapes(): void {
+    /** Reshapes a line or area to new points, over the animation time when switching snapshots. */
+    function reshape(id: string, shown: ShownShape, points: LatLng[], switching: boolean): void {
+        const key = `shape:${id}`
+        const current = shapePoints(shown.layer)
+        if (JSON.stringify(current) === JSON.stringify(points) || moving.get(key)?.target === JSON.stringify(points)) return
+        stopMoving(key)
+        if (shown.editing) shown.layer.pm?.disable()
+        const finish = () => {
+            shown.layer.setLatLngs(points)
+            if (shown.editing) shown.layer.pm?.enable({allowSelfIntersection: true})
+            moving.delete(key)
+        }
+        if (!switching || current.length !== points.length) {
+            finish()
+            return
+        }
+        const stop = animate(share => shown.layer.setLatLngs(betweenLines(current, points, share)), finish)
+        moving.set(key, {target: JSON.stringify(points), stop})
+    }
+
+    /** Marks a shape as selected or not and lets it be edited while selected, keeping the layer. */
+    function markSelected(shown: ShownShape, selected: boolean): void {
+        shown.layer.getElement()?.classList.toggle('is-selected', selected)
+        const editing = selected && !boardState.readOnly
+        if (editing === shown.editing) return
+        if (editing) shown.layer.pm?.enable({allowSelfIntersection: true})
+        else shown.layer.pm?.disable()
+        shown.editing = editing
+    }
+
+    function syncShapes(switching: boolean): void {
         const wanted = wantedShapes()
         for (const [id, shown] of shapes) {
             if (wanted.has(id)) continue
-            shapeGroup.removeLayer(shown.layer)
+            stopMoving(`shape:${id}`)
             shapes.delete(id)
+            shown.layer.pm?.disable()
+            if (switching) fadeOut(shown.layer, shapeGroup)
+            else shapeGroup.removeLayer(shown.layer)
         }
         for (const [id, want] of wanted) {
-            const key = JSON.stringify([want.feature, want.selected])
+            const key = JSON.stringify(want.feature)
             const shown = shapes.get(id)
             if (shown?.key === key) {
-                if (JSON.stringify(shapePoints(shown.layer)) !== JSON.stringify(want.points)) {
-                    if (shown.editing) shown.layer.pm?.disable()
-                    shown.layer.setLatLngs(want.points)
-                    if (shown.editing) shown.layer.pm?.enable({allowSelfIntersection: true})
-                }
+                markSelected(shown, want.selected)
+                reshape(id, shown, want.points, switching)
                 continue
             }
             if (shown) {
+                stopMoving(`shape:${id}`)
                 shown.layer.pm?.disable()
                 shapeGroup.removeLayer(shown.layer)
             }
             const layer = createShape(id, want)
             layer.addTo(shapeGroup)
+            if (switching && !shown) layer.getElement()?.classList.add('is-entering')
             const editing = want.selected && !boardState.readOnly
             if (editing) layer.pm?.enable({allowSelfIntersection: true})
             shapes.set(id, {layer, key, editing})
@@ -226,12 +320,16 @@ export function useBoardLayers(map: L.Map): void {
     map.on('zoomend', scaleSymbols)
 
     const stop = watchEffect(() => {
-        syncShapes()
-        syncMarkers()
+        const snapshotId = currentSnapshot.value?.id ?? null
+        const switching = viewerSettings.animate && shownSnapshotId !== null && snapshotId !== shownSnapshotId
+        shownSnapshotId = snapshotId
+        syncShapes(switching)
+        syncMarkers(switching)
     })
 
     onBeforeUnmount(() => {
         stop()
+        for (const key of [...moving.keys()]) stopMoving(key)
         map.off('zoomend', scaleSymbols)
         markerGroup.remove()
         shapeGroup.remove()

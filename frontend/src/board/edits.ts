@@ -1,7 +1,7 @@
 import {strength, type SquadTemplate, type Strength} from '../catalog'
-import {newId} from './document'
-import type {Board, DrawnFeature, Feature, LatLng, Squad, Vehicle} from './model'
-import {remove, set, type Operation} from './operations'
+import {addMinutes, newId} from './document'
+import type {Board, DrawnFeature, Feature, LatLng, Snapshot, Squad, Vehicle} from './model'
+import {copyOf, remove, set, type Operation} from './operations'
 
 /** The fields of a vehicle that are edited directly. */
 export interface VehicleFields {
@@ -174,4 +174,36 @@ export function removeFeature(board: Board, featureId: string): Operation[] {
 /** Sets one of the board's own fields: its title, region or map view. */
 export function setBoardField<K extends 'title' | 'region' | 'view'>(key: K, value: Board[K]): Operation[] {
     return [set([key], value)]
+}
+
+/** The minutes a new snapshot starts after the one it copies. */
+export const SNAPSHOT_STEP_MINUTES = 5
+
+/**
+ * Adds a snapshot as a copy of another: every vehicle, dismounted squad and drawing stays where it
+ * was, the time moves on by a few minutes, title and report start empty.
+ */
+export function copySnapshot(board: Board, sourceId: string): {id: string, operations: Operation[]} | null {
+    const source = board.snapshots[sourceId]
+    if (!source) return null
+    const id = newId()
+    const snapshot: Snapshot = {
+        ...copyOf({vehicles: source.vehicles, squads: source.squads, features: source.features}),
+        id,
+        time: addMinutes(source.time, SNAPSHOT_STEP_MINUTES),
+        title: '',
+        report: '',
+    }
+    return {id, operations: [set(['snapshots', id], snapshot)]}
+}
+
+/** Changes the time, title or report of a snapshot. */
+export function updateSnapshot(snapshotId: string, fields: Partial<Pick<Snapshot, 'time' | 'title' | 'report'>>): Operation[] {
+    return Object.entries(fields).map(([key, value]) => set(['snapshots', snapshotId, key], value))
+}
+
+/** Removes a snapshot; the last one stays, since a board always shows a situation. */
+export function removeSnapshot(board: Board, snapshotId: string): Operation[] {
+    if (!board.snapshots[snapshotId] || Object.keys(board.snapshots).length < 2) return []
+    return [remove(['snapshots', snapshotId])]
 }

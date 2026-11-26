@@ -52,3 +52,13 @@ describe('prototype keys', () => {
         expect(({} as Record<string, unknown>).polluted).toBeUndefined()
     })
 })
+
+describe('values from reactive state', () => {
+    it('are copied even when they sit inside a proxy', async () => {
+        const {reactive} = await import('vue')
+        const state = reactive({points: [[1, 2]]})
+        const document: Record<string, unknown> = {}
+        expect(applyOperation(document, set(['drawn'], {...state}))).toBe(true)
+        expect(document).toEqual({drawn: {points: [[1, 2]]}})
+    })
+})

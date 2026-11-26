@@ -16,7 +16,7 @@ defineExpose({map})
 
 onMounted(() => {
   if (!container.value) return
-  const created = L.map(container.value, {...MAP_LIMITS, zoomControl: true, doubleClickZoom: false})
+  const created = L.map(container.value, {...MAP_LIMITS, zoomControl: true, doubleClickZoom: false, keyboard: false})
       .setView(props.view.center, props.view.zoom)
   L.tileLayer(TILE_URL, TILE_LAYER_OPTIONS).addTo(created)
   map.value = created
@@ -100,6 +100,24 @@ onBeforeUnmount(() => {
 
 .board-text.is-selected {
   outline: 2px solid var(--eb-focus);
+}
+
+.board-icon.is-entering,
+.board-shape.is-entering {
+  animation: board-fade-in 800ms ease-out;
+}
+
+.board-icon.is-leaving,
+.board-shape.is-leaving {
+  opacity: 0;
+  transition: opacity 800ms ease-in;
+  pointer-events: none;
+}
+
+@keyframes board-fade-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .board-shape {

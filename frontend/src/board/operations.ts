@@ -17,6 +17,14 @@ function isNode(value: unknown): value is Node {
 }
 
 /**
+ * A deep copy of a value through JSON. Board values are plain JSON data, and unlike
+ * `structuredClone` this also copies values that still sit inside a reactive proxy.
+ */
+export function copyOf<T>(value: T): T {
+    return value === undefined ? value : JSON.parse(JSON.stringify(value))
+}
+
+/**
  * Applies one operation to a document in place and tells whether it changed anything. An
  * operation whose parent is gone, because someone else deleted it in the meantime, is dropped
  * rather than recreating half an object, and so is any path through a key that would reach an
@@ -37,7 +45,7 @@ export function applyOperation(document: Node, operation: Operation): boolean {
         delete parent[last]
         return true
     }
-    parent[last] = structuredClone(operation.value)
+    parent[last] = copyOf(operation.value)
     return true
 }
 

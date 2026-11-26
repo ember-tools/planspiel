@@ -17,6 +17,14 @@ export function localNow(now = new Date()): string {
         + `T${pad(now.getHours())}:${pad(now.getMinutes())}`
 }
 
+/** A snapshot time moved by some minutes, across midnight and month ends alike. */
+export function addMinutes(time: string, minutes: number): string {
+    const [date = '', clock = ''] = time.split('T')
+    const [year, month, day] = date.split('-').map(Number)
+    const [hours, mins] = clock.split(':').map(Number)
+    return localNow(new Date(year!, month! - 1, day!, hours!, mins! + minutes))
+}
+
 /** An empty snapshot at a time. */
 export function emptySnapshot(time: string): Snapshot {
     return {id: newId(), time, title: '', report: '', vehicles: {}, squads: {}, features: {}}
