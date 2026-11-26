@@ -20,6 +20,7 @@ usePage({
       <h1 class="headline m-0 text-4xl md:text-5xl">Lagekarte für Feuerwehr-Planspiele</h1>
       <p class="m-0 text-lg text-muted">{{ DESCRIPTION }}</p>
       <div class="flex flex-wrap gap-2">
+        <UButton to="/platte" icon="i-lucide-arrow-right" trailing :label="t('nav.openBoard')"/>
         <UButton to="/hilfe" color="neutral" variant="outline" icon="i-lucide-life-buoy" :label="t('nav.help')"/>
       </div>
     </section>

@@ -3,7 +3,7 @@ import {computed, ref} from 'vue'
 import TacticalSymbol from '../components/TacticalSymbol.vue'
 import {DEFAULT_REGION, REGIONS, SQUAD_FUNCTIONS, baseType, defaultSquads, formatStrength, region, strength, type VehicleCategory} from '../catalog'
 import {t} from '../i18n'
-import {markSymbol, type MarkKind} from '../symbols/tactical'
+import {MARK_KINDS, markSymbol} from '../symbols/tactical'
 import {squadSymbol, vehicleSymbol} from '../symbols/units'
 
 const regionId = ref(DEFAULT_REGION)
@@ -16,8 +16,6 @@ const CATEGORIES: VehicleCategory[] = ['engine', 'aerial', 'command', 'technical
 const groups = computed(() => CATEGORIES
     .map(category => ({category, types: types.value.filter(type => baseType(type.base).category === category)}))
     .filter(group => group.types.length))
-
-const MARKS: MarkKind[] = ['incident', 'fire', 'hazard', 'staging', 'command-post', 'water', 'casualty-collection']
 </script>
 
 <template>
@@ -67,7 +65,7 @@ const MARKS: MarkKind[] = ['incident', 'fire', 'hazard', 'staging', 'command-pos
     <section class="flex flex-col gap-3">
       <h2 class="section-title m-0">{{ t('symbols.marks') }}</h2>
       <div class="flex flex-wrap gap-4">
-        <div v-for="mark in MARKS" :key="mark" class="flex w-28 flex-col items-center gap-1 text-center">
+        <div v-for="mark in MARK_KINDS" :key="mark" class="flex w-28 flex-col items-center gap-1 text-center">
           <TacticalSymbol :svg="markSymbol(mark)" :width="64"/>
           <span class="text-[13px]">{{ t(`marks.${mark}`) }}</span>
         </div>

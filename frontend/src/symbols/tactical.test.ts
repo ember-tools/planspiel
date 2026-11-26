@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {escapeSvg, markSymbol, unitSymbol} from './tactical'
+import {MARK_KINDS, escapeSvg, markSymbol, unitSymbol} from './tactical'
 
 describe('escapeSvg', () => {
     it('escapes everything that could leave a text node or an attribute', () => {
@@ -28,7 +28,7 @@ describe('unitSymbol', () => {
 
 describe('markSymbol', () => {
     it('is a complete SVG element for every kind', () => {
-        for (const kind of ['incident', 'fire', 'hazard', 'staging', 'command-post', 'water', 'casualty-collection'] as const) {
+        for (const kind of MARK_KINDS) {
             expect(markSymbol(kind)).toMatch(/^<svg [^>]*>.*<\/svg>$/)
         }
     })

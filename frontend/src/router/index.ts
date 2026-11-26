@@ -3,7 +3,7 @@ import {createRouter, type RouteRecordRaw, type RouterHistory} from 'vue-router'
 const routes: RouteRecordRaw[] = [
     {path: '/', name: 'Landing', component: () => import('../views/LandingView.vue'), meta: {public: true}},
     {path: '/hilfe', name: 'Help', component: () => import('../views/HelpView.vue'), meta: {public: true}},
-    {path: '/p/:token', name: 'Board', component: () => import('../views/BoardView.vue'),
+    {path: '/platte', name: 'Board', component: () => import('../views/BoardView.vue'),
         meta: {titleKey: 'routes.board'}},
     {path: '/zeichen', name: 'Symbols', component: () => import('../views/SymbolsView.vue'),
         meta: {titleKey: 'routes.symbols'}},

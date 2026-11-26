@@ -2,7 +2,12 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import {onBeforeUnmount, onMounted, shallowRef, useTemplateRef} from 'vue'
-import {DEFAULT_CENTER, DEFAULT_ZOOM, MAP_LIMITS, TILE_LAYER_OPTIONS, TILE_URL} from '../scripts/tiles'
+import BoardLayers from './BoardLayers.vue'
+import type {MapView} from '../board/model'
+import {MAP_LIMITS, TILE_LAYER_OPTIONS, TILE_URL} from '../scripts/tiles'
+
+/** The Leaflet map of a board. The board's layers and tools attach once the map exists. */
+const props = defineProps<{ view: MapView }>()
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const map = shallowRef<L.Map | null>(null)
@@ -11,8 +16,8 @@ defineExpose({map})
 
 onMounted(() => {
   if (!container.value) return
-  const created = L.map(container.value, {...MAP_LIMITS, zoomControl: true})
-      .setView(DEFAULT_CENTER, DEFAULT_ZOOM)
+  const created = L.map(container.value, {...MAP_LIMITS, zoomControl: true, doubleClickZoom: false})
+      .setView(props.view.center, props.view.zoom)
   L.tileLayer(TILE_URL, TILE_LAYER_OPTIONS).addTo(created)
   map.value = created
 })
@@ -24,11 +29,120 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="container" class="board-map size-full"/>
+  <div ref="container" class="board-map size-full">
+    <BoardLayers v-if="map" :map="map"/>
+  </div>
 </template>
 
-<style scoped>
+<style>
 .board-map {
+  isolation: isolate;
   background-color: var(--ui-bg-muted);
+}
+
+.board-map.is-placing {
+  cursor: crosshair;
+}
+
+.board-icon {
+  background: none;
+  border: none;
+}
+
+.board-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+  min-width: var(--board-symbol, 48px);
+  transform: translate(-50%, calc(var(--board-symbol, 48px) / -3));
+}
+
+.board-marker-symbol {
+  display: block;
+  width: var(--board-symbol, 48px);
+  line-height: 0;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-black) 35%, transparent));
+}
+
+.board-marker-symbol svg {
+  width: 100%;
+  height: auto;
+}
+
+.board-marker-caption {
+  font-family: var(--font-condensed);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--color-steel-950);
+  text-shadow: 0 0 2px var(--color-white), 0 0 2px var(--color-white), 0 0 3px var(--color-white);
+  white-space: nowrap;
+}
+
+.board-marker.is-selected .board-marker-symbol {
+  outline: 2px solid var(--eb-focus);
+  outline-offset: 2px;
+}
+
+.board-text {
+  width: max-content;
+  max-width: 240px;
+  padding: 2px 6px;
+  font-family: var(--font-condensed);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-steel-950);
+  background-color: color-mix(in srgb, var(--color-white) 85%, transparent);
+  border: 1px solid var(--color-steel-400);
+  white-space: pre-wrap;
+}
+
+.board-text.is-selected {
+  outline: 2px solid var(--eb-focus);
+}
+
+.board-shape {
+  stroke-width: 4;
+}
+
+.board-shape.is-selected {
+  stroke-width: 6;
+}
+
+.board-line-hose {
+  stroke: var(--color-signal-500);
+}
+
+.board-line-barrier {
+  stroke: var(--color-signal-700);
+  stroke-dasharray: 10 6;
+}
+
+.board-line-route {
+  stroke: var(--color-steel-700);
+  stroke-dasharray: 2 8;
+  stroke-linecap: round;
+}
+
+.board-area {
+  stroke-width: 3;
+  fill-opacity: 0.25;
+}
+
+.board-area-danger {
+  stroke: var(--color-signal-500);
+  fill: var(--color-signal-500);
+}
+
+.board-area-sector {
+  stroke: var(--color-steel-700);
+  fill: var(--color-steel-400);
+  stroke-dasharray: 12 6;
+}
+
+.board-area-staging {
+  stroke: var(--color-steel-900);
+  fill: var(--color-steel-300);
 }
 </style>

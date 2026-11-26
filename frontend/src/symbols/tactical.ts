@@ -14,7 +14,9 @@ import type {Organisation, SymbolShape} from '../catalog'
 export type UnitSize = 'squad' | 'section' | 'group' | 'platoon'
 
 /** The kinds of map marks that are not units: places and events of an incident. */
-export type MarkKind = 'incident' | 'fire' | 'hazard' | 'staging' | 'command-post' | 'water' | 'casualty-collection'
+export const MARK_KINDS = ['incident', 'fire', 'hazard', 'staging', 'command-post', 'water', 'casualty-collection'] as const
+
+export type MarkKind = typeof MARK_KINDS[number]
 
 /** What a symbol is drawn from. */
 export interface SymbolSpec {
