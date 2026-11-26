@@ -27,11 +27,14 @@ usePage({
       <HelpTopic title="Platzieren" :paragraphs="[
         'Ziehe ein Fahrzeug aus der Liste auf die Karte, oder wähle im Menü des Fahrzeugs „Platzieren“ und klicke auf die Stelle. Auf der Karte verschiebst du es mit der Maus.',
         'Ein Fahrzeug, das in einem Lagestand nicht auf der Karte steht, ist in diesem Lagestand nicht vor Ort. Mit „Von der Karte nehmen“ nimmst du es wieder herunter.',
+        'Der kleine Keil am Zeichen zeigt, wo vorne ist. Klicke ein Fahrzeug an und ziehe den Punkt vor seiner Front im Kreis, um es zu drehen; mit gedrückter Umschalttaste rastet es in 15-Grad-Schritten. Die Schrift bleibt dabei lesbar: Zeigt die Front nach links, sitzt der Keil links. Jeder Lagestand hat seine eigene Richtung.',
       ]"/>
       <HelpTopic title="Absitzen und aufsitzen" :paragraphs="[
         'Klicke ein Fahrzeug an, dann erscheinen seine Trupps. Mit „Absitzen“ steigt ein Trupp aus und steht neben dem Fahrzeug; von da an bewegst du ihn unabhängig. Mit „Aufsitzen“ steigt er wieder ein und fährt mit dem Fahrzeug. Absitzen kann nur, wer in einem Fahrzeug auf der Karte sitzt.',
         '„Alle absitzen“ und „Alle aufsitzen“ erledigen das für die ganze Besatzung auf einmal.',
+        'Dasselbe geht direkt auf der Karte: Klickst du ein Fahrzeug an, öffnet sich daneben ein kleines Menü mit seinen Trupps; ein abgesessener Trupp bietet dort „Aufsitzen“ an.',
         'Unter dem Fahrzeug steht die Stärke der Besatzung an Bord als Führer/Unterführer/Mannschaft/Gesamt, etwa 0/1/5/6.',
+        'Abgesessene Trupps erscheinen als kleines Zeichen mit abgerundeten Ecken und einem Punkt darüber, ohne Räder; so unterscheiden sie sich auf einen Blick von den Fahrzeugen.',
       ]"/>
     </HelpSection>
 
@@ -48,8 +51,16 @@ usePage({
     <HelpSection title="Lagestände">
       <HelpTopic :paragraphs="[
         'Unter der Karte stehen die Lagestände nach Uhrzeit. „Lagestand“ legt einen neuen als Kopie des gezeigten an, fünf Minuten später. Danach verschiebst du dort, was sich bewegt hat.',
+        'Das kleine Plus vor einem Lagestand fügt einen neuen davor ein: zwischen zwei Lageständen zur Uhrzeit in der Mitte, mit allem, was in einem der beiden zu sehen ist – was in beiden steht, an der Stelle des früheren. Vor dem ersten Lagestand entsteht eine Kopie fünf Minuten früher.',
         'Mit den Pfeiltasten links und rechts oder den Pfeilen an der Zeitleiste schaltest du durch die Lagestände. Die Animation lässt sich an der Zeitleiste ausschalten.',
         'Im Reiter „Lage“ stellst du Uhrzeit und Titel des Lagestands ein und schreibst die Lagemeldung dazu.',
+      ]"/>
+    </HelpSection>
+
+    <HelpSection title="Präsentieren">
+      <HelpTopic :paragraphs="[
+        '„Präsentieren“ neben dem Titel zeigt die Platte im Vollbild: Kopf- und Fußzeile verschwinden, Karte, Zeitleiste und Seitenleiste füllen den Bildschirm.',
+        'Die Seitenleiste blendest du mit dem Knopf oben rechts auf der Karte oder der Taste S aus und wieder ein; ohne sie hat die Karte die ganze Breite. Mit Esc oder „Beenden“ verlässt du das Vollbild.',
       ]"/>
     </HelpSection>
 
@@ -76,6 +87,7 @@ usePage({
         'Mit „Kartenausschnitt als Start merken“ legst du fest, welchen Ausschnitt die Platte beim Öffnen zeigt.',
         'Eine geteilte Platte liegt auf dem Server, bis sie über den Link zum Bearbeiten gelöscht wird. Wer einen der Links hat, kann sie öffnen.',
         'Die Kartenkacheln kommen von OpenStreetMap über den Server der Planspielplatte, dein Browser verbindet sich nicht mit OpenStreetMap.',
+        'Die Adresssuche oben links auf der Karte springt zum gewählten Ort. Gesucht wird bei Photon von Komoot, aber über den Server der Planspielplatte: Komoot sieht deine IP-Adresse nicht, und der Server speichert keine Suchbegriffe dauerhaft.',
       ]"/>
     </HelpSection>
   </HelpPage>

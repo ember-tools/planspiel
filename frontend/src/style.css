@@ -1,1 +1,5 @@
 @import "@emberbox/ui/style.css";
+
+html.is-presenting {
+  overflow: hidden;
+}

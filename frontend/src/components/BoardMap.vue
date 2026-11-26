@@ -7,11 +7,15 @@ import type {MapView} from '../board/model'
 import {createTileLayer} from '../scripts/tile-layer'
 import {MAP_LIMITS} from '../scripts/tiles'
 
-/** The Leaflet map of a board. The board's layers and tools attach once the map exists. */
+/**
+ * The Leaflet map of a board. The board's layers and tools attach once the map exists, and the map
+ * follows every change of its container's size, such as a side panel being hidden.
+ */
 const props = defineProps<{ view: MapView }>()
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const map = shallowRef<L.Map | null>(null)
+let resizing: ResizeObserver | undefined
 
 defineExpose({map})
 
@@ -21,9 +25,12 @@ onMounted(() => {
       .setView(props.view.center, props.view.zoom)
   createTileLayer().addTo(created)
   map.value = created
+  resizing = new ResizeObserver(() => created.invalidateSize())
+  resizing.observe(container.value)
 })
 
 onBeforeUnmount(() => {
+  resizing?.disconnect()
   map.value?.remove()
   map.value = null
 })
@@ -43,6 +50,12 @@ onBeforeUnmount(() => {
 
 .board-map.is-placing {
   cursor: crosshair;
+}
+
+.board-found-place {
+  fill: none;
+  stroke: var(--color-signal-500);
+  stroke-width: 4;
 }
 
 .board-map.is-placing .board-icon,
@@ -74,11 +87,33 @@ onBeforeUnmount(() => {
   width: var(--board-marker-size);
   line-height: 0;
   filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-black) 35%, transparent));
+  position: relative;
+  margin-bottom: calc(var(--board-turn-reach, 0) * (var(--board-marker-size) / 6 + 9px));
+  transform: rotate(var(--board-turn, 0deg));
 }
 
 .board-marker-symbol svg {
   width: 100%;
   height: auto;
+}
+
+.board-marker-front {
+  position: absolute;
+  top: 47.5%;
+  right: -9px;
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 9px solid var(--color-signal-500);
+  transform: translateY(-50%);
+}
+
+.board-marker-symbol.faces-left .board-marker-front {
+  right: auto;
+  left: -9px;
+  border-left: none;
+  border-right: 9px solid var(--color-signal-500);
 }
 
 .board-marker-caption {

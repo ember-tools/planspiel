@@ -1,13 +1,16 @@
 import L from 'leaflet'
 import {onBeforeUnmount, watchEffect} from 'vue'
-import {ANIMATION_MS, animate, between, betweenLines} from './animation'
-import {drawFeature, moveSquad, placeVehicle, vehicleOfSquad} from './edits'
+import {ANIMATION_MS, animate, between, betweenHeadings, betweenLines} from './animation'
+import {drawFeature, moveSquad, placeVehicle, turnVehicle, vehicleOfSquad} from './edits'
 import {shapePoints, toLatLng} from './geometry'
 import {betweenFrames, cornersOf, frameOf, isRectangle} from './rectangle'
 import {editRectangle, type RectangleEditor} from './rectangle-editor'
-import {featureMarker, squadMarker, symbolSize, vehicleMarker, vehicleSymbolPerMetre, type MarkerContent} from './markers'
+import {
+    DEFAULT_HEADING, featureMarker, squadMarker, symbolSize, symbolTurn, vehicleMarker, vehicleSymbolPerMetre, type MarkerContent,
+} from './markers'
 import type {Feature, LatLng} from './model'
 import {boardState, commit, currentSnapshot, select, viewerSettings, type Selection} from './store'
+import {turnVehicleHandle, type VehicleTurner} from './vehicle-turner'
 import {escapeSvg} from '@emberbox/ui'
 
 /** One marker the map should show. */
@@ -17,6 +20,8 @@ interface WantedMarker {
     draggable: boolean
     onMove: (position: LatLng) => void
     selection: Selection
+    /** Where a vehicle's front points; markers of anything else are not turned. */
+    heading?: number
 }
 
 /** A marker the map shows, with what it was last drawn from. */
@@ -24,6 +29,20 @@ interface ShownMarker {
     layer: L.Marker
     html: string
     draggable: boolean
+    heading?: number
+}
+
+/**
+ * Turns the symbol of a vehicle marker so its front points in a direction. How far the turned
+ * symbol reaches down is handed to the stylesheet, which pushes the caption below it.
+ */
+function showTurn(layer: L.Marker, heading: number | undefined): void {
+    const symbol = layer.getElement()?.querySelector<HTMLElement>('.board-marker-symbol')
+    if (!symbol || heading === undefined) return
+    const {rotation, facesLeft} = symbolTurn(heading)
+    symbol.style.setProperty('--board-turn', `${rotation}deg`)
+    symbol.style.setProperty('--board-turn-reach', String(Math.abs(Math.sin(rotation * Math.PI / 180))))
+    symbol.classList.toggle('faces-left', facesLeft)
 }
 
 /** One line or area the map should show. */
@@ -74,6 +93,7 @@ function wantedMarkers(): Map<string, WantedMarker> {
                 draggable: editable,
                 onMove: position => commit(placeVehicle(board, snapshot.id, vehicle.id, position)),
                 selection,
+                heading: placed.heading ?? DEFAULT_HEADING,
             })
         }
         for (const squad of Object.values(vehicle.squads)) {
@@ -143,11 +163,78 @@ export function useBoardLayers(map: L.Map): void {
     const shapes = new Map<string, ShownShape>()
     const handlers = new Map<string, WantedMarker>()
     const moving = new Map<string, {target: string, stop: () => void}>()
+    const turning = new Map<string, () => void>()
     let shownSnapshotId: string | null = null
+    let turner: {vehicleId: string, layer: L.Marker, handle: VehicleTurner} | null = null
+    let handTurned: {key: string, heading: number} | null = null
+
+    /** The heading a marker shows: the one its handle is being dragged to, else the stored one. */
+    function shownHeading(key: string, shown: ShownMarker): number | undefined {
+        return handTurned?.key === key ? handTurned.heading : shown.heading
+    }
 
     function stopMoving(key: string): void {
         moving.get(key)?.stop()
         moving.delete(key)
+    }
+
+    function stopTurning(key: string): void {
+        turning.get(key)?.()
+        turning.delete(key)
+    }
+
+    /** Turns a marker's symbol to a new heading, over the animation time when switching snapshots. */
+    function turnMarker(key: string, shown: ShownMarker, heading: number | undefined, switching: boolean): void {
+        if (heading === shown.heading) return
+        stopTurning(key)
+        const from = shown.heading
+        shown.heading = heading
+        if (!switching || from === undefined || heading === undefined) {
+            showTurn(shown.layer, shownHeading(key, shown))
+            return
+        }
+        const stop = animate(share => showTurn(shown.layer, betweenHeadings(from, heading, share)), () => turning.delete(key))
+        turning.set(key, stop)
+    }
+
+    /** Shows the turning handle on the selected vehicle while it may be edited, and nowhere else. */
+    function syncTurner(): void {
+        const selection = boardState.selection
+        const shown = selection?.kind === 'vehicle' ? markers.get(`vehicle:${selection.id}`) : undefined
+        const allowed = boardState.board && currentSnapshot.value && shown && !boardState.readOnly && boardState.tool.kind === 'select'
+        if (!allowed || !selection) {
+            turner?.handle.remove()
+            turner = null
+            handTurned = null
+            return
+        }
+        const heading = shown.heading ?? DEFAULT_HEADING
+        if (turner?.vehicleId === selection.id && turner.layer === shown.layer) {
+            turner.handle.place(heading)
+            return
+        }
+        turner?.handle.remove()
+        handTurned = null
+        const vehicleId = selection.id
+        const key = `vehicle:${vehicleId}`
+        const layer = shown.layer
+        let startedIn: string | undefined
+        turner = {
+            vehicleId,
+            layer,
+            handle: turnVehicleHandle(map, layer, heading, {
+                start: () => { startedIn = currentSnapshot.value?.id },
+                preview: preview => {
+                    handTurned = {key, heading: preview}
+                    showTurn(layer, preview)
+                },
+                commit: turned => {
+                    handTurned = null
+                    if (boardState.board && startedIn) commit(turnVehicle(boardState.board, startedIn, vehicleId, turned))
+                    showTurn(layer, markers.get(key)?.heading)
+                },
+            }),
+        }
     }
 
     /** Moves a marker from where it is to a position over the animation time. */
@@ -195,6 +282,7 @@ export function useBoardLayers(map: L.Map): void {
         for (const [key, shown] of markers) {
             if (wanted.has(key)) continue
             stopMoving(key)
+            stopTurning(key)
             markers.delete(key)
             handlers.delete(key)
             if (!switching) {
@@ -213,7 +301,8 @@ export function useBoardLayers(map: L.Map): void {
                 const vehicleKey = vehicleKeyOf(key)
                 const from = switching && vehicleKey ? before.get(vehicleKey) : undefined
                 const layer = createMarker(key, want, from ?? want.position)
-                markers.set(key, {layer, html: want.content.html, draggable: want.draggable})
+                markers.set(key, {layer, html: want.content.html, draggable: want.draggable, heading: want.heading})
+                showTurn(layer, want.heading)
                 if (switching) {
                     layer.getElement()?.classList.add('is-entering')
                     if (from) moveMarker(key, layer, want.position)
@@ -227,9 +316,11 @@ export function useBoardLayers(map: L.Map): void {
                 stopMoving(key)
                 shown.layer.setLatLng(want.position)
             }
+            turnMarker(key, shown, want.heading, switching)
             if (shown.html !== want.content.html) {
                 shown.layer.setIcon(L.divIcon({html: want.content.html, className: 'board-icon', iconSize: undefined, iconAnchor: [0, 0]}))
                 shown.html = want.content.html
+                showTurn(shown.layer, shownHeading(key, shown))
             }
             if (shown.draggable !== want.draggable) {
                 if (want.draggable) shown.layer.dragging?.enable()
@@ -378,13 +469,16 @@ export function useBoardLayers(map: L.Map): void {
         shownSnapshotId = snapshotId
         syncShapes(switching)
         syncMarkers(switching)
+        syncTurner()
     })
 
     onBeforeUnmount(() => {
         stop()
         for (const key of [...moving.keys()]) stopMoving(key)
+        for (const key of [...turning.keys()]) stopTurning(key)
         map.off('zoomend moveend', scaleSymbols)
         markerGroup.remove()
         shapeGroup.remove()
+        turner?.handle.remove()
     })
 }

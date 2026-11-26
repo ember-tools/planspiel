@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import {computed, nextTick, useTemplateRef, watch} from 'vue'
 import {sortedSnapshots} from '../../board/document'
-import {copySnapshot} from '../../board/edits'
+import {canInsertBetween, copySnapshot, insertSnapshotBefore, insertSnapshotBetween} from '../../board/edits'
 import type {Snapshot} from '../../board/model'
+import type {Operation} from '../../board/operations'
 import {boardState, commit, currentSnapshot, setAnimate, showSnapshot, stepSnapshot, viewerSettings} from '../../board/store'
 import {setFollow, syncState} from '../../board/sync'
 import {t} from '../../i18n'
@@ -31,11 +32,37 @@ function label(snapshot: Snapshot): string {
 function addSnapshot(): void {
   const board = boardState.board
   const current = currentSnapshot.value
-  if (!board || !current) return
-  const copy = copySnapshot(board, current.id)
-  if (!copy) return
-  commit(copy.operations)
-  showSnapshot(copy.id)
+  if (board && current) insert(copySnapshot(board, current.id))
+}
+
+/** Inserts a snapshot before the one at `index`: between it and its predecessor, or before the first. */
+function insertAt(index: number): void {
+  const board = boardState.board
+  const later = snapshots.value[index]
+  const earlier = snapshots.value[index - 1]
+  if (!board || !later) return
+  insert(earlier ? insertSnapshotBetween(board, earlier.id, later.id) : insertSnapshotBefore(board, later.id))
+}
+
+function insert(created: {id: string, operations: Operation[]} | null): void {
+  if (!created) return
+  commit(created.operations)
+  showSnapshot(created.id)
+}
+
+/** Whether a snapshot can be inserted before the one at `index`; not between two of the same time. */
+function canInsertAt(index: number): boolean {
+  const earlier = snapshots.value[index - 1]
+  return !earlier || canInsertBetween(earlier, snapshots.value[index]!)
+}
+
+/** The label of the button that inserts a snapshot before the one at `index`. */
+function insertLabel(index: number): string {
+  const later = snapshots.value[index]!
+  const earlier = snapshots.value[index - 1]
+  return earlier
+    ? t('timeline.insertBetween', {earlier: label(earlier), later: label(later)})
+    : t('timeline.insertBefore', {time: label(later)})
 }
 </script>
 
@@ -44,7 +71,9 @@ function addSnapshot(): void {
     <UButton size="sm" color="neutral" variant="ghost" icon="i-lucide-chevron-left" :disabled="position <= 0"
              :aria-label="t('timeline.previous')" @click="stepSnapshot(-1)"/>
     <ol ref="list" class="m-0 flex min-w-0 grow list-none gap-1 overflow-x-auto p-0">
-      <li v-for="snapshot in snapshots" :key="snapshot.id" class="shrink-0">
+      <li v-for="(snapshot, index) in snapshots" :key="snapshot.id" class="flex shrink-0 items-center gap-1">
+        <UButton v-if="editable && canInsertAt(index)" size="xs" color="neutral" variant="ghost" icon="i-lucide-plus" class="opacity-80 hover:opacity-100 focus-visible:opacity-100"
+                 :aria-label="insertLabel(index)" :title="insertLabel(index)" @click="insertAt(index)"/>
         <button type="button"
                 class="flex cursor-pointer flex-col items-start rounded-sm border px-2 py-1 text-left"
                 :class="snapshot.id === currentId ? 'border-(--eb-focus) bg-elevated' : 'border-transparent hover:bg-elevated'"

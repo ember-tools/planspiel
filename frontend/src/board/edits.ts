@@ -1,5 +1,5 @@
-import {strength, type SquadTemplate, type Strength} from '../catalog'
-import {addMinutes, newId} from './document'
+import {squadFunction, strength, type SquadTemplate, type Strength} from '../catalog'
+import {addMinutes, minutesBetween, newId} from './document'
 import type {Board, DrawnFeature, Feature, LatLng, Snapshot, Squad, Vehicle} from './model'
 import {copyOf, remove, set, type Operation} from './operations'
 
@@ -82,8 +82,22 @@ function leaveEverySnapshot(board: Board, key: 'vehicles' | 'squads' | 'features
  * happens for a vehicle or snapshot the board does not have.
  */
 export function placeVehicle(board: Board, snapshotId: string, vehicleId: string, position: LatLng): Operation[] {
-    if (!board.vehicles[vehicleId] || !board.snapshots[snapshotId]) return []
+    const snapshot = board.snapshots[snapshotId]
+    if (!board.vehicles[vehicleId] || !snapshot) return []
+    if (snapshot.vehicles[vehicleId]) return [set(['snapshots', snapshotId, 'vehicles', vehicleId, 'position'], position)]
     return [set(['snapshots', snapshotId, 'vehicles', vehicleId], {position})]
+}
+
+/** A direction in degrees brought into 0 up to 360. */
+export function normalHeading(degrees: number): number {
+    const heading = ((degrees % 360) + 360) % 360
+    return heading >= 360 ? 0 : heading
+}
+
+/** Turns a vehicle on scene so its front points in a direction, in degrees clockwise from north. */
+export function turnVehicle(board: Board, snapshotId: string, vehicleId: string, heading: number): Operation[] {
+    if (!board.snapshots[snapshotId]?.vehicles[vehicleId] || !Number.isFinite(heading)) return []
+    return [set(['snapshots', snapshotId, 'vehicles', vehicleId, 'heading'], normalHeading(heading))]
 }
 
 /** Takes a vehicle off scene in a snapshot; its dismounted squads leave with it. */
@@ -97,6 +111,16 @@ export function withdrawVehicle(board: Board, snapshotId: string, vehicleId: str
             .filter(squadId => Object.hasOwn(snapshot.squads, squadId))
             .map(squadId => remove(['snapshots', snapshotId, 'squads', squadId])),
     ]
+}
+
+/** The squads of a vehicle in crew order. */
+export function crewOf(vehicle: Vehicle): Squad[] {
+    return Object.values(vehicle.squads).sort((left, right) => left.order - right.order)
+}
+
+/** A squad named by its function with its strength, such as "AT (2)". */
+export function squadLabel(squad: Squad): string {
+    return `${squadFunction(squad.function).short} (${squad.strength})`
 }
 
 /** The vehicle a squad belongs to. */
@@ -120,6 +144,23 @@ export function dismountSquad(board: Board, snapshotId: string, squadId: string)
 /** Lets a squad mount its vehicle again. */
 export function mountSquad(snapshotId: string, squadId: string): Operation[] {
     return [remove(['snapshots', snapshotId, 'squads', squadId])]
+}
+
+/** Dismounts a squad sitting in its vehicle, or mounts one that has dismounted. */
+export function toggleSquad(board: Board, snapshotId: string, squadId: string): Operation[] {
+    const snapshot = board.snapshots[snapshotId]
+    if (!snapshot) return []
+    return Object.hasOwn(snapshot.squads, squadId) ? mountSquad(snapshotId, squadId) : dismountSquad(board, snapshotId, squadId)
+}
+
+/** Dismounts every squad of a vehicle, or mounts every one, leaving those already so as they are. */
+export function setCrewDismounted(board: Board, snapshotId: string, vehicleId: string, dismounted: boolean): Operation[] {
+    const snapshot = board.snapshots[snapshotId]
+    const vehicle = board.vehicles[vehicleId]
+    if (!snapshot || !vehicle) return []
+    return crewOf(vehicle)
+        .filter(squad => Object.hasOwn(snapshot.squads, squad.id) !== dismounted)
+        .flatMap(squad => dismounted ? dismountSquad(board, snapshotId, squad.id) : mountSquad(snapshotId, squad.id))
 }
 
 /** Moves a dismounted squad. */
@@ -186,15 +227,62 @@ export const SNAPSHOT_STEP_MINUTES = 5
 export function copySnapshot(board: Board, sourceId: string): {id: string, operations: Operation[]} | null {
     const source = board.snapshots[sourceId]
     if (!source) return null
+    return newSnapshot(addMinutes(source.time, SNAPSHOT_STEP_MINUTES), source)
+}
+
+/** A new, untitled snapshot at a time holding copies of some placed things. */
+function newSnapshot(time: string, content: Pick<Snapshot, 'vehicles' | 'squads' | 'features'>): {id: string, operations: Operation[]} {
     const id = newId()
-    const snapshot: Snapshot = {
-        ...copyOf({vehicles: source.vehicles, squads: source.squads, features: source.features}),
-        id,
-        time: addMinutes(source.time, SNAPSHOT_STEP_MINUTES),
-        title: '',
-        report: '',
-    }
+    const placed = copyOf({vehicles: content.vehicles, squads: content.squads, features: content.features})
+    const snapshot: Snapshot = {...placed, id, time, title: '', report: ''}
     return {id, operations: [set(['snapshots', id], snapshot)]}
+}
+
+/** Whether a snapshot can go between two others: only when their times differ, so it sorts between them. */
+export function canInsertBetween(earlier: Snapshot, later: Snapshot): boolean {
+    return minutesBetween(earlier.time, later.time) > 0
+}
+
+/**
+ * The squads of the later snapshot as they go into a snapshot before it: a squad whose vehicle
+ * stands elsewhere in the earlier snapshot moves along with it, so it stays beside its vehicle.
+ */
+function squadsMovedAlong(board: Board, earlier: Snapshot, later: Snapshot): Snapshot['squads'] {
+    const moved: Snapshot['squads'] = {}
+    for (const [squadId, squad] of Object.entries(later.squads)) {
+        const vehicleId = vehicleOfSquad(board, squadId)?.id
+        const from = vehicleId ? later.vehicles[vehicleId]?.position : undefined
+        const to = vehicleId ? earlier.vehicles[vehicleId]?.position : undefined
+        moved[squadId] = from && to
+            ? {position: [squad.position[0] + to[0] - from[0], squad.position[1] + to[1] - from[1]]}
+            : squad
+    }
+    return moved
+}
+
+/**
+ * Inserts a snapshot between two others with different times: in the middle of their times,
+ * rounded down to the minute, holding everything either of them shows. What both show stays where
+ * the earlier one has it, and a squad dismounted in either is dismounted in the new one, beside
+ * its vehicle.
+ */
+export function insertSnapshotBetween(board: Board, earlierId: string, laterId: string): {id: string, operations: Operation[]} | null {
+    const earlier = board.snapshots[earlierId]
+    const later = board.snapshots[laterId]
+    if (!earlier || !later || !canInsertBetween(earlier, later)) return null
+    const gap = minutesBetween(earlier.time, later.time)
+    return newSnapshot(addMinutes(earlier.time, Math.floor(gap / 2)), {
+        vehicles: {...later.vehicles, ...earlier.vehicles},
+        squads: {...squadsMovedAlong(board, earlier, later), ...earlier.squads},
+        features: {...later.features, ...earlier.features},
+    })
+}
+
+/** Inserts a copy of a snapshot five minutes before it, to show what happened earlier. */
+export function insertSnapshotBefore(board: Board, sourceId: string): {id: string, operations: Operation[]} | null {
+    const source = board.snapshots[sourceId]
+    if (!source) return null
+    return newSnapshot(addMinutes(source.time, -SNAPSHOT_STEP_MINUTES), source)
 }
 
 /** Changes the time, title or report of a snapshot. */

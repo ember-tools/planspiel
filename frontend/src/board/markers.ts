@@ -1,8 +1,8 @@
-import {baseOf, formatStrength, squadFunction} from '../catalog'
+import {baseOf, formatStrength} from '../catalog'
 import {SYMBOL_WIDTH, escapeSvg, markSymbol} from '@emberbox/ui'
 import {squadSymbol, vehicleSymbol} from '../symbols/units'
 import {t} from '../i18n'
-import {crewStrength} from './edits'
+import {crewStrength, squadLabel} from './edits'
 import type {Board, Feature, Squad, Vehicle} from './model'
 
 const SYMBOL_AT_ZOOM_17 = 48
@@ -39,6 +39,24 @@ export function vehicleSymbolPerMetre(zoom: number, latitude: number): number {
     return pixelsPerMetre(zoom, latitude) * SYMBOL_WIDTH / VEHICLE_BODY_WIDTH
 }
 
+/** The direction a vehicle's front points when the snapshot gives none: east, as the symbol is drawn. */
+export const DEFAULT_HEADING = 90
+
+/** How a vehicle symbol is turned on the map: by how many degrees, and whether its front is on the left. */
+export interface SymbolTurn {
+    rotation: number
+    facesLeft: boolean
+}
+
+/**
+ * How to turn a vehicle symbol for a heading. The symbol never turns more than a quarter round
+ * either way, so its writing never stands on its head; a front pointing west of north or south
+ * is shown by putting the front mark on the left instead.
+ */
+export function symbolTurn(heading: number = DEFAULT_HEADING): SymbolTurn {
+    return heading <= 180 ? {rotation: heading - 90, facesLeft: false} : {rotation: heading - 270, facesLeft: true}
+}
+
 /** What a marker shows: the HTML of its icon and whether it is selected. */
 export interface MarkerContent {
     html: string
@@ -67,13 +85,13 @@ export function vehicleMarker(board: Board, snapshotId: string, vehicle: Vehicle
     const {mounted, dismounted} = crewStrength(board, snapshotId, vehicle.id)
     const crew = dismounted.total ? t('board.aboard', {strength: formatStrength(mounted)}) : formatStrength(mounted)
     const crewLine = mounted.total + dismounted.total ? crew : ''
-    return marker(vehicleSymbol(vehicle.type, board.region), [vehicle.callsign, crewLine], selected, baseOf(vehicle.type).length)
+    const front = '<span class="board-marker-front" aria-hidden="true"></span>'
+    return marker(vehicleSymbol(vehicle.type, board.region) + front, [vehicle.callsign, crewLine], selected, baseOf(vehicle.type).length)
 }
 
 /** The marker of a dismounted squad: its symbol, its strength and the vehicle it belongs to. */
 export function squadMarker(vehicle: Vehicle, squad: Squad, selected: boolean): MarkerContent {
-    const name = squadFunction(squad.function).short
-    return marker(squadSymbol(squad.function), [`${name} (${squad.strength})`, vehicle.callsign], selected)
+    return marker(squadSymbol(squad.function), [squadLabel(squad), vehicle.callsign], selected)
 }
 
 /** The marker of a mark or a text on the map. */

@@ -100,6 +100,16 @@ def _check_feature(feature: dict, at: str) -> None:
         _one_of(feature.get("style"), AREA_STYLES, f"{at}.style")
 
 
+def _check_headings(value: Any, where: str) -> None:
+    for key, placed in _record(value, where).items():
+        heading = _record(placed, f"{where}.{key}").get("heading")
+        if heading is None and "heading" not in placed:
+            continue
+        valid = not isinstance(heading, bool) and isinstance(heading, (int, float)) and math.isfinite(heading)
+        if not valid or not 0 <= heading < 360:
+            raise BoardFormatError("field", f"{where}.{key}.heading")
+
+
 def _check_positions(value: Any, known: set[str], where: str) -> None:
     for key, placed in _record(value, where).items():
         if key not in known:
@@ -130,6 +140,7 @@ def check_board(data: Any) -> dict:
         _text(snapshot.get("title"), f"{at}.title")
         _text(snapshot.get("report"), f"{at}.report")
         _check_positions(snapshot.get("vehicles"), vehicle_ids, f"{at}.vehicles")
+        _check_headings(snapshot.get("vehicles"), f"{at}.vehicles")
         _check_positions(snapshot.get("squads"), squad_ids, f"{at}.squads")
         for key, drawn in _record(snapshot.get("features"), f"{at}.features").items():
             where = f"{at}.features.{key}"

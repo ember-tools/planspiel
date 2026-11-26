@@ -98,7 +98,9 @@ export function useMapTools(map: L.Map): void {
     }
 
     function onKey(event: KeyboardEvent): void {
-        if (event.key === 'Escape') useTool({kind: 'select'})
+        if (event.key !== 'Escape' || boardState.tool.kind === 'select') return
+        event.preventDefault()
+        useTool({kind: 'select'})
     }
 
     container.addEventListener('dragover', onDragOver)

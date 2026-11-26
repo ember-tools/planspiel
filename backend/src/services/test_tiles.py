@@ -11,11 +11,9 @@ from fastapi.testclient import TestClient
 from services import tiles
 from services.tiles import (
     CLIENT_MISS_BURST,
-    GLOBAL_MISS_BURST,
     MIN_FRESHNESS,
     TOUCH_INTERVAL,
     WAIT_AFTER_FAILURE,
-    MissBudget,
     TileCache,
     TileNotAllowed,
     TileRateLimited,
@@ -218,22 +216,6 @@ class TileTest(unittest.IsolatedAsyncioTestCase):
             image.unlink()
         self.assertEqual(b"PNG1", await self.cache.get(*CENTRE))
         self.assertEqual(2, len(self.upstream.requests))
-
-
-class BudgetTest(unittest.TestCase):
-    def test_everyone_shares_one_budget(self):
-        clock = Clock()
-        budget = MissBudget(clock)
-        taken = sum(budget.take(f"client-{n}") for n in range(GLOBAL_MISS_BURST + 10))
-        self.assertEqual(GLOBAL_MISS_BURST, taken)
-
-    def test_budget_refills_over_time(self):
-        clock = Clock()
-        budget = MissBudget(clock)
-        while budget.take("one"):
-            pass
-        clock.now += 60
-        self.assertTrue(budget.take("one"))
 
 
 class RouteTest(unittest.TestCase):

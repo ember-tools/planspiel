@@ -46,6 +46,8 @@ export type FeatureKind = Feature['kind']
 /** Where a vehicle stands in a snapshot. A vehicle missing from a snapshot is not on scene. */
 export interface PlacedVehicle {
     position: LatLng
+    /** Where its front points, in degrees clockwise from north; without it the front points east. */
+    heading?: number
 }
 
 /** Where a dismounted squad stands in a snapshot. A squad missing from a snapshot sits in its vehicle. */

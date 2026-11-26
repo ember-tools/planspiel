@@ -74,6 +74,17 @@ function checkFeature(feature: Fields, at: string): void {
     if (feature.kind === 'area') oneOf(feature.style, AREA_STYLES, `${at}.style`)
 }
 
+/** Checks the optional direction of placed vehicles: a number of degrees from 0 up to 360. */
+function checkHeadings(value: unknown, where: string): void {
+    for (const [id, placed] of Object.entries(record(value, where))) {
+        const heading = record(placed, `${where}.${id}`).heading
+        if (heading === undefined) continue
+        if (typeof heading !== 'number' || !Number.isFinite(heading) || heading < 0 || heading >= 360) {
+            throw new BoardFormatError('field', `${where}.${id}.heading`)
+        }
+    }
+}
+
 function checkPositions(value: unknown, known: Set<string>, where: string): void {
     for (const [id, placed] of Object.entries(record(value, where))) {
         if (!known.has(id)) throw new BoardFormatError('reference', `${where}.${id}`)
@@ -108,6 +119,7 @@ export function parseBoard(data: unknown): Board {
         text(snapshot.title, `${at}.title`)
         text(snapshot.report, `${at}.report`)
         checkPositions(snapshot.vehicles, vehicleIds, `${at}.vehicles`)
+        checkHeadings(snapshot.vehicles, `${at}.vehicles`)
         checkPositions(snapshot.squads, squadIds, `${at}.squads`)
         for (const [id, drawn] of Object.entries(record(snapshot.features, `${at}.features`))) {
             const where = `${at}.features.${id}`

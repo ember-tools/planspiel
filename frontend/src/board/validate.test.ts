@@ -1,5 +1,6 @@
 import {INCIDENT_MARK_KINDS, WATER_SUPPLY_MARK_KINDS} from '@emberbox/ui'
 import {readFileSync} from 'node:fs'
+import {resolve} from 'node:path'
 import {beforeEach, describe, expect, it} from 'vitest'
 import {defaultSquads} from '../catalog'
 import {createBoard, sortedSnapshots} from './document'
@@ -63,6 +64,14 @@ describe('parseBoard', () => {
         expect(problemAfter(copy => { copy.title = undefined })).toBe('field')
     })
 
+    it('accepts a vehicle heading from 0 up to 360 and nothing else', () => {
+        const placed = (copy: any) => copy.snapshots[snapshotId].vehicles[vehicleId]
+        expect(problemAfter(copy => { placed(copy).heading = 359.5 })).toBeNull()
+        for (const heading of [360, -1, '90', null, Number.NaN]) {
+            expect(problemAfter(copy => { placed(copy).heading = heading }), String(heading)).toBe('field')
+        }
+    })
+
     it('refuses unknown kinds and styles', () => {
         expect(problemAfter(copy => { copy.features[featureId].mark = 'volcano' })).toBe('field')
         expect(problemAfter(copy => { copy.features[featureId].kind = 'circle' })).toBe('field')
@@ -75,7 +84,7 @@ describe('parseBoard', () => {
     })
 
     it('accepts exactly the marks the server accepts', () => {
-        const server = readFileSync(new URL('../../../backend/src/data/board_format.py', import.meta.url), 'utf-8')
+        const server = readFileSync(resolve(process.cwd(), '../backend/src/data/board_format.py'), 'utf-8')
         const kinds = /^MARK_KINDS = \((.*)\)$/m.exec(server)![1]!.match(/"[^"]+"/g)!.map(kind => JSON.parse(kind))
         expect(kinds).toEqual([...INCIDENT_MARK_KINDS])
     })

@@ -10,7 +10,8 @@ export interface RectangleEditor {
 
 /** Marks the map while a handle is dragged, so the click that ends the drag selects nothing. */
 export const HANDLE_DRAG = 'is-dragging-handle'
-const CLICK_GRACE = 150
+/** How long after a handle is let go the map still ignores clicks, in milliseconds. */
+export const CLICK_GRACE = 150
 
 function handleIcon(kind: 'corner' | 'rotate' | 'move'): L.DivIcon {
     return L.divIcon({className: `board-handle board-handle-${kind}`, iconSize: [14, 14], iconAnchor: [7, 7]})
