@@ -61,7 +61,7 @@ export function useMapTools(map: L.Map): void {
         if (tool.kind === 'draw-line') {
             map.pm.enableDraw('Line', {templineStyle: {className: `board-line-${tool.style}`}, finishOn: 'dblclick'})
         } else if (tool.kind === 'draw-area') {
-            map.pm.enableDraw('Polygon', {templineStyle: {className: `board-area-${tool.style}`}})
+            map.pm.enableDraw('Polygon', {templineStyle: {className: `board-area-${tool.style}`}, finishOn: 'dblclick'})
         }
     }, {immediate: true})
 

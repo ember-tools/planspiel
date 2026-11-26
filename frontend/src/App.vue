@@ -25,7 +25,9 @@ useHead({
     <AppHeader :name="t('app.name')" :subtitle="t('app.subtitle')" home="/" logo="/favicon.svg">
       <template #nav>
         <RouterLink to="/" class="nav-link">{{ t('nav.landing') }}</RouterLink>
-        <RouterLink to="/platte" class="nav-link">{{ t('nav.board') }}</RouterLink>
+        <RouterLink to="/platte" class="nav-link" :class="{'router-link-exact-active': route.name === 'SharedBoard'}">
+          {{ t('nav.board') }}
+        </RouterLink>
         <RouterLink to="/hilfe" class="nav-link">{{ t('nav.help') }}</RouterLink>
       </template>
     </AppHeader>

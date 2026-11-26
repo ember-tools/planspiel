@@ -6,6 +6,7 @@ import {shapePoints, toLatLng} from './geometry'
 import {featureMarker, squadMarker, symbolSize, vehicleMarker, type MarkerContent} from './markers'
 import type {Feature, LatLng} from './model'
 import {boardState, commit, currentSnapshot, select, viewerSettings, type Selection} from './store'
+import {escapeSvg} from '../symbols/tactical'
 
 /** One marker the map should show. */
 interface WantedMarker {
@@ -39,6 +40,7 @@ interface ShownShape {
     layer: ShapeLayer
     key: string
     editing: boolean
+    label: string
 }
 
 function samePosition(layer: L.Marker, [lat, lng]: LatLng): boolean {
@@ -259,6 +261,7 @@ export function useBoardLayers(map: L.Map): void {
         if (shown.editing) shown.layer.pm?.disable()
         const finish = () => {
             shown.layer.setLatLngs(points)
+            if (shown.label) shown.layer.openTooltip()
             if (shown.editing) shown.layer.pm?.enable({allowSelfIntersection: true})
             moving.delete(key)
         }
@@ -280,6 +283,16 @@ export function useBoardLayers(map: L.Map): void {
         shown.editing = editing
     }
 
+    /** Shows the label of a line or area on the shape itself, or none. */
+    function showLabel(shown: ShownShape, text: string): void {
+        if (shown.label === text) return
+        shown.label = text
+        shown.layer.unbindTooltip()
+        if (text) {
+            shown.layer.bindTooltip(escapeSvg(text), {permanent: true, direction: 'center', className: 'board-shape-label'})
+        }
+    }
+
     function syncShapes(switching: boolean): void {
         const wanted = wantedShapes()
         for (const [id, shown] of shapes) {
@@ -295,6 +308,7 @@ export function useBoardLayers(map: L.Map): void {
             const shown = shapes.get(id)
             if (shown?.key === key) {
                 markSelected(shown, want.selected)
+                showLabel(shown, want.text)
                 reshape(id, shown, want.points, switching)
                 continue
             }
@@ -308,7 +322,9 @@ export function useBoardLayers(map: L.Map): void {
             if (switching && !shown) layer.getElement()?.classList.add('is-entering')
             const editing = want.selected && !boardState.readOnly
             if (editing) layer.pm?.enable({allowSelfIntersection: true})
-            shapes.set(id, {layer, key, editing})
+            const added: ShownShape = {layer, key, editing, label: ''}
+            showLabel(added, want.text)
+            shapes.set(id, added)
         }
     }
 

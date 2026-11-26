@@ -124,6 +124,22 @@ onBeforeUnmount(() => {
   stroke-width: 4;
 }
 
+.board-shape-label {
+  padding: 1px 6px;
+  font-family: var(--font-condensed);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-steel-950);
+  background-color: color-mix(in srgb, var(--color-white) 85%, transparent);
+  border: 1px solid var(--color-steel-400);
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.board-shape-label::before {
+  display: none;
+}
+
 .board-shape.is-selected {
   stroke-width: 6;
 }
