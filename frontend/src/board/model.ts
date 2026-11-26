@@ -1,4 +1,7 @@
-import type {MarkKind} from '../symbols/tactical'
+import type {INCIDENT_MARK_KINDS} from '@emberbox/ui'
+
+/** A mark a board can carry: the places and events of an incident. */
+export type MarkKind = typeof INCIDENT_MARK_KINDS[number]
 
 /** A point on the map as latitude and longitude. */
 export type LatLng = [number, number]

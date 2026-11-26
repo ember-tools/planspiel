@@ -8,7 +8,7 @@ import {editRectangle, type RectangleEditor} from './rectangle-editor'
 import {featureMarker, squadMarker, symbolSize, vehicleMarker, type MarkerContent} from './markers'
 import type {Feature, LatLng} from './model'
 import {boardState, commit, currentSnapshot, select, viewerSettings, type Selection} from './store'
-import {escapeSvg} from '../symbols/tactical'
+import {escapeSvg} from '@emberbox/ui'
 
 /** One marker the map should show. */
 interface WantedMarker {
