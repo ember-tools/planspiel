@@ -96,6 +96,11 @@ class TileTest(unittest.IsolatedAsyncioTestCase):
             await self.cache.get(5, 17, 10)
         self.assertEqual([], self.upstream.requests)
 
+    async def test_zoom_19_is_the_deepest_level(self):
+        self.assertEqual(b"PNG1", await self.cache.get(19, 281670, 171926))
+        with self.assertRaises(TileNotAllowed):
+            await self.cache.get(20, 563340, 343852)
+
     async def test_failed_tile_is_not_asked_again_for_a_while(self):
         self.upstream.status = 500
         with self.assertRaises(TileUnavailable):
