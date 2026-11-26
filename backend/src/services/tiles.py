@@ -35,7 +35,7 @@ from fastapi.responses import Response
 
 UPSTREAM = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 MIN_ZOOM = 10
-MAX_ZOOM = 18
+MAX_ZOOM = 19
 GERMANY = (5.8, 47.2, 15.1, 55.1)
 MIN_FRESHNESS = 7 * 24 * 3600
 BROWSER_CACHE = "public, max-age=86400"
