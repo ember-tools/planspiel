@@ -4,7 +4,7 @@ import viteConfig from './vite.config'
 export default mergeConfig(viteConfig, defineConfig({
     test: {
         include: ['src/**/*.test.ts'],
-        environment: 'node',
+        environment: 'happy-dom',
         server: {deps: {inline: ['@emberbox/ui', '@nuxt/ui']}},
     },
 }))

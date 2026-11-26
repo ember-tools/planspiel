@@ -17,6 +17,11 @@ export default {
     },
     board: {
         untitled: 'Unbenannte Platte',
+        present: 'Präsentieren',
+        endPresentation: 'Beenden',
+        hideSidebar: 'Seitenleiste aus',
+        showSidebar: 'Seitenleiste ein',
+        sidebarKey: 'Taste S blendet die Seitenleiste ein und aus',
         tabUnits: 'Einheiten',
         tabDraw: 'Zeichnen',
         tabSituation: 'Lage',

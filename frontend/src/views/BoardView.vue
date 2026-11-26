@@ -8,7 +8,9 @@ import SnapshotPanel from '../components/board/SnapshotPanel.vue'
 import SnapshotTimeline from '../components/board/SnapshotTimeline.vue'
 import SyncStatus from '../components/board/SyncStatus.vue'
 import UnitsPanel from '../components/board/UnitsPanel.vue'
+import {usePresentation} from '../composables/usePresentation'
 import {setBoardField} from '../board/edits'
+import {inControl} from '../board/keys'
 import type {LatLng} from '../board/model'
 import {boardState, commit, loadViewerSettings, openLocalBoard, stepSnapshot} from '../board/store'
 import {closeSharedBoard, openSharedBoard, syncState} from '../board/sync'
@@ -17,6 +19,8 @@ import {t} from '../i18n'
 const route = useRoute()
 const mapView = useTemplateRef<InstanceType<typeof BoardMap>>('mapView')
 const tab = ref('units')
+const stage = useTemplateRef<HTMLElement>('stage')
+const {presenting, sidebar, start: present, stop: endPresentation, toggleSidebar} = usePresentation(stage, () => boardState.tool.kind === 'select')
 
 const tabs = computed(() => [
   {label: t('board.tabUnits'), value: 'units', icon: 'i-lucide-truck', slot: 'units' as const},
@@ -25,18 +29,10 @@ const tabs = computed(() => [
   {label: t('board.tabBoard'), value: 'board', icon: 'i-lucide-settings-2', slot: 'board' as const},
 ])
 
-/** Places where arrow keys belong to the control in focus. */
-const INTERACTIVE = [
-  'input', 'textarea', 'select', '[contenteditable="true"]', '[role="dialog"]', '[role="listbox"]',
-  '[role="tab"]', '[role="menu"]', '[role="menuitem"]', '[role="combobox"]', '[role="slider"]',
-  '[role="radiogroup"]', '[role="switch"]',
-].join(', ')
-
 /** Arrow keys step through the snapshots, unless the focus is on a control that uses them. */
 function onKey(event: KeyboardEvent): void {
   if (event.defaultPrevented || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return
-  const target = event.target as HTMLElement | null
-  if (target?.closest(INTERACTIVE)) return
+  if (inControl(event)) return
   event.preventDefault()
   stepSnapshot(event.key === 'ArrowLeft' ? -1 : 1)
 }
@@ -86,15 +82,23 @@ function saveView(): void {
     <p class="text-muted">{{ t('sync.unavailableHint') }}</p>
     <UButton color="neutral" variant="outline" class="mt-4 inline-flex" to="/platte" :label="t('sync.toLocal')"/>
   </div>
-  <div v-else-if="boardState.board" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-    <div class="flex min-w-0 flex-col gap-2 lg:h-[calc(100dvh-11rem)]">
-      <div class="h-[55dvh] min-h-80 overflow-hidden rounded-(--ui-radius) border border-default lg:h-auto lg:grow">
+  <div v-else-if="boardState.board" ref="stage" :class="['board-stage grid gap-4', presenting ? 'is-presenting' : '', sidebar ? 'lg:grid-cols-[minmax(0,1fr)_380px]' : '']">
+    <div class="board-stage-main flex min-w-0 flex-col gap-2 lg:h-[calc(100dvh-11rem)]">
+      <div class="board-stage-map relative h-[55dvh] min-h-80 overflow-hidden rounded-(--ui-radius) border border-default lg:h-auto lg:grow">
         <BoardMap ref="mapView" :key="boardState.generation" :view="boardState.board.view"/>
+        <div v-if="presenting" class="absolute top-2 right-2 z-10 flex gap-1">
+          <UButton size="sm" color="neutral" variant="solid" :icon="sidebar ? 'i-lucide-panel-right-close' : 'i-lucide-panel-right-open'"
+                   :label="sidebar ? t('board.hideSidebar') : t('board.showSidebar')" :title="t('board.sidebarKey')" @click="toggleSidebar"/>
+          <UButton size="sm" color="neutral" variant="solid" icon="i-lucide-minimize" :label="t('board.endPresentation')" @click="endPresentation"/>
+        </div>
       </div>
       <SnapshotTimeline/>
     </div>
-    <aside class="flex min-w-0 flex-col gap-3 lg:h-[calc(100dvh-11rem)] lg:overflow-y-auto lg:overflow-x-hidden">
-      <h1 class="headline m-0 truncate text-2xl">{{ boardState.board.title || t('board.untitled') }}</h1>
+    <aside v-show="sidebar" class="board-stage-side flex min-w-0 flex-col gap-3 lg:h-[calc(100dvh-11rem)] lg:overflow-y-auto lg:overflow-x-hidden">
+      <div class="flex items-center gap-2">
+        <h1 class="headline m-0 min-w-0 grow truncate text-2xl">{{ boardState.board.title || t('board.untitled') }}</h1>
+        <UButton v-if="!presenting" size="sm" color="neutral" variant="outline" icon="i-lucide-presentation" :label="t('board.present')" @click="present"/>
+      </div>
       <SyncStatus v-if="token"/>
       <UTabs v-model="tab" :items="tabs" size="sm" class="w-full" :ui="{content: 'pt-2', trigger: 'px-1.5 gap-1', label: 'overflow-visible'}">
         <template #units>
@@ -114,3 +118,34 @@ function saveView(): void {
   </div>
   <p v-else class="py-12 text-center text-muted">{{ t('sync.connecting') }}</p>
 </template>
+
+<style scoped>
+.board-stage.is-presenting {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background-color: var(--ui-bg);
+}
+
+.board-stage.is-presenting .board-stage-main {
+  height: 85dvh;
+}
+
+.board-stage.is-presenting .board-stage-map {
+  height: auto;
+  flex-grow: 1;
+}
+
+@media (width >= 64rem) {
+  .board-stage.is-presenting {
+    grid-template-rows: minmax(0, 1fr);
+    overflow-y: hidden;
+  }
+
+  .board-stage.is-presenting .board-stage-main,
+  .board-stage.is-presenting .board-stage-side {
+    height: 100%;
+  }
+}
+</style>

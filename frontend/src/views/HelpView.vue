@@ -53,6 +53,13 @@ usePage({
       ]"/>
     </HelpSection>
 
+    <HelpSection title="Präsentieren">
+      <HelpTopic :paragraphs="[
+        '„Präsentieren“ neben dem Titel zeigt die Platte im Vollbild: Kopf- und Fußzeile verschwinden, Karte, Zeitleiste und Seitenleiste füllen den Bildschirm.',
+        'Die Seitenleiste blendest du mit dem Knopf oben rechts auf der Karte oder der Taste S aus und wieder ein; ohne sie hat die Karte die ganze Breite. Mit Esc oder „Beenden“ verlässt du das Vollbild.',
+      ]"/>
+    </HelpSection>
+
     <HelpSection title="Teilen und gemeinsam bearbeiten">
       <HelpTopic :paragraphs="[
         'Im Reiter „Platte“ legst du die Platte mit „Platte teilen“ auf den Server. Du bekommst zwei Links: einen zum Bearbeiten und einen zum Zusehen.',

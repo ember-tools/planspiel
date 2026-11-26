@@ -7,11 +7,15 @@ import type {MapView} from '../board/model'
 import {createTileLayer} from '../scripts/tile-layer'
 import {MAP_LIMITS} from '../scripts/tiles'
 
-/** The Leaflet map of a board. The board's layers and tools attach once the map exists. */
+/**
+ * The Leaflet map of a board. The board's layers and tools attach once the map exists, and the map
+ * follows every change of its container's size, such as a side panel being hidden.
+ */
 const props = defineProps<{ view: MapView }>()
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const map = shallowRef<L.Map | null>(null)
+let resizing: ResizeObserver | undefined
 
 defineExpose({map})
 
@@ -21,9 +25,12 @@ onMounted(() => {
       .setView(props.view.center, props.view.zoom)
   createTileLayer().addTo(created)
   map.value = created
+  resizing = new ResizeObserver(() => created.invalidateSize())
+  resizing.observe(container.value)
 })
 
 onBeforeUnmount(() => {
+  resizing?.disconnect()
   map.value?.remove()
   map.value = null
 })
