@@ -50,6 +50,17 @@ describe('strength', () => {
         expect(formatStrength(strength(defaultSquads('be:LHF')))).toBe('0/1/5/6')
     })
 
+    it('starts every Berlin LHF but the LHF-M as a squad, whatever its size', () => {
+        for (const type of ['be:LHF 10/5', 'be:LHF 16/12', 'be:LHF 20/12', 'be:LHF 20/12 CAFS', 'be:LHF 20/8']) {
+            expect(formatStrength(strength(defaultSquads(type))), type).toBe('0/1/5/6')
+        }
+        expect(formatStrength(strength(defaultSquads('be:LHF-M')))).toBe('0/1/3/4')
+    })
+
+    it('keeps a large Berlin LHF a group vehicle in other states', () => {
+        expect(typeInRegion('be:LHF 20/12', 'HE')?.name).toBe('HLF 20')
+    })
+
     it('counts a platoon leader as leader', () => {
         expect(formatStrength(strength([{function: 'platoon-leader', strength: 1}, {function: 'driver', strength: 1}])))
             .toBe('1/0/1/2')

@@ -58,6 +58,12 @@ BASE_RULES: list[tuple[str, str]] = [
 ]
 """Prefixes of the Berlin type names and the base type they map to; the first match wins."""
 
+CREW_RULES: list[tuple[str, str | None]] = [
+    ("LHF-M", None),
+    ("LHF", "engine-squad"),
+]
+"""Prefixes of the Berlin type names whose crew differs from their base type's; the first match wins."""
+
 STATION_KINDS = {"FW": "fire-station", "FF": "volunteer", "TD": "technical-service", "RW": "ambulance-station"}
 
 
@@ -67,6 +73,14 @@ def base_of(type_name: str) -> str:
         if type_name.startswith(prefix):
             return base
     raise SystemExit(f"No base type for vehicle type {type_name!r}; add a rule to BASE_RULES.")
+
+
+def crew_of(type_name: str, base: str) -> str | None:
+    """Return the base type whose crew a Berlin type starts with, when that differs from its own base."""
+    for prefix, crew in CREW_RULES:
+        if type_name.startswith(prefix):
+            return crew if crew != base else None
+    return None
 
 
 PREFIX_NAMES = {"AB": "Abrollbehälter", "FwA": "Feuerwehranhänger", "LKW": "Lastkraftwagen", "GW": "Gerätewagen"}
@@ -109,6 +123,9 @@ def build_types(rows: list[dict[str, str]]) -> str:
         name = line["Typ"].strip()
         entry = types.setdefault(name, {"id": type_id(name), "name": name, "longName": "", "base": base_of(name)})
         entry["longName"] = entry["longName"] or long_name(line)
+        crew = crew_of(name, entry["base"])
+        if crew:
+            entry["crew"] = crew
     return (
         f"{HEADER}"
         "import type {RegionalType} from './model'\n"

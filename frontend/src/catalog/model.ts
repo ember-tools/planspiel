@@ -85,6 +85,8 @@ export interface RegionalType {
     base: BaseTypeId
     /** The number that stands for this type in a call sign, where the region has such a scheme. */
     radioCode?: string
+    /** The base type whose crew a new vehicle of this type starts with, when it differs from its own base. */
+    crew?: BaseTypeId
 }
 
 /** A real vehicle of a fleet, to pick instead of typing type and call sign. */

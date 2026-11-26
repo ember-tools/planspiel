@@ -97,7 +97,8 @@ export function typeInRegion(typeId: string, regionId: string): RegionalType | u
 
 /** The squads a new vehicle of a type starts with. */
 export function defaultSquads(typeId: string): SquadTemplate[] {
-    return baseOf(typeId).squads.map(squad => ({...squad}))
+    const type = findType(typeId)
+    return baseType(type?.crew ?? type?.base ?? '').squads.map(squad => ({...squad}))
 }
 
 /** A strength report: leaders, sub-leaders, crew and everyone together. */
