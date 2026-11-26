@@ -39,6 +39,7 @@ export const boardState = reactive({
     tool: {kind: 'select'} as Tool,
     selection: null as Selection | null,
     generation: 0,
+    shared: false,
 })
 
 const listeners = new Set<CommitListener>()
@@ -65,8 +66,12 @@ export function onCommit(listener: CommitListener): () => void {
     return () => listeners.delete(listener)
 }
 
-/** Shows a board, starting at its earliest snapshot. */
-export function showBoard(board: Board, readOnly = false): void {
+/**
+ * Shows a board, starting at its earliest snapshot. A shared board is never written to this
+ * browser's local copy.
+ */
+export function showBoard(board: Board, readOnly = false, shared = false): void {
+    boardState.shared = shared
     boardState.board = board
     boardState.generation += 1
     boardState.readOnly = readOnly
@@ -115,6 +120,7 @@ function saveLocalNow(): void {
 
 /** Saves the local board shortly after the last change, so a burst of edits is one write. */
 function saveLocalSoon(): void {
+    if (boardState.shared) return
     clearTimeout(saveTimer)
     saveTimer = setTimeout(saveLocalNow, SAVE_DELAY)
 }
@@ -186,4 +192,35 @@ export function stepSnapshot(direction: -1 | 1): void {
     const ordered = sortedSnapshots(board)
     const next = ordered[ordered.findIndex(snapshot => snapshot.id === current.id) + direction]
     if (next) showSnapshot(next.id)
+}
+
+/**
+ * Applies operations that someone else made, as the server hands them on. They are not handed to
+ * the commit listeners, since they are no edit of this client, and a read-only board takes them too.
+ */
+export function applyRemote(operations: Operation[]): void {
+    const board = boardState.board
+    if (!board) return
+    applyOperations(board as unknown as Record<string, unknown>, operations)
+    if (boardState.selection && !selectionExists(board, boardState.selection)) boardState.selection = null
+    if (!board.snapshots[boardState.snapshotId]) boardState.snapshotId = sortedSnapshots(board)[0]?.id ?? ''
+}
+
+/**
+ * Replaces the shown board's document with a newer full copy, keeping the shown snapshot when it
+ * still exists, so a resync never throws the viewer back to the start.
+ */
+export function replaceDocument(board: Board, readOnly: boolean): void {
+    const keep = boardState.snapshotId
+    boardState.board = board
+    boardState.readOnly = readOnly
+    if (!board.snapshots[keep]) boardState.snapshotId = sortedSnapshots(board)[0]?.id ?? ''
+    const selection = boardState.selection
+    if (selection && !selectionExists(board, selection)) boardState.selection = null
+}
+
+function selectionExists(board: Board, selection: Selection): boolean {
+    if (selection.kind === 'vehicle') return Boolean(board.vehicles[selection.id])
+    if (selection.kind === 'feature') return Boolean(board.features[selection.id])
+    return Object.values(board.vehicles).some(vehicle => Boolean(vehicle.squads[selection.id]))
 }

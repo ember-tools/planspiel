@@ -4,6 +4,7 @@ import {sortedSnapshots} from '../../board/document'
 import {copySnapshot} from '../../board/edits'
 import type {Snapshot} from '../../board/model'
 import {boardState, commit, currentSnapshot, setAnimate, showSnapshot, stepSnapshot, viewerSettings} from '../../board/store'
+import {setFollow, syncState} from '../../board/sync'
 import {t} from '../../i18n'
 
 /** The snapshots of the board in time order: step through them, and add one as a copy of the shown one. */
@@ -59,6 +60,8 @@ function addSnapshot(): void {
              :aria-label="t('timeline.next')" @click="stepSnapshot(1)"/>
     <UButton v-if="editable" size="sm" icon="i-lucide-plus" :label="t('timeline.add')" :title="t('timeline.addHint')"
              @click="addSnapshot"/>
+    <USwitch v-if="boardState.shared && boardState.readOnly" size="sm" :model-value="syncState.follow"
+             :label="t('timeline.follow')" class="shrink-0" @update:model-value="setFollow"/>
     <USwitch size="sm" :model-value="viewerSettings.animate" :label="t('timeline.animate')" class="shrink-0"
              @update:model-value="setAnimate"/>
   </div>

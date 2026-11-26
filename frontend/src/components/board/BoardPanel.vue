@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import {useConfirm} from '@emberbox/ui'
+import {useRouter} from 'vue-router'
 import {computed, ref, useTemplateRef} from 'vue'
 import {REGIONS} from '../../catalog'
 import {createBoard} from '../../board/document'
 import {BoardFormatError, parseBoard} from '../../board/validate'
-import {setBoardField} from '../../board/edits'
+import {replaceSharedContent, setBoardField} from '../../board/edits'
 import {boardState, commit, replaceLocalBoard} from '../../board/store'
 import {t} from '../../i18n'
+import SharePanel from './SharePanel.vue'
 
 /** The board itself: title, region, start view, export, import and starting over. */
 const emit = defineEmits<{ saveView: [] }>()
 
 const confirm = useConfirm()
+const router = useRouter()
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 const importError = ref('')
 
@@ -54,7 +57,9 @@ async function importBoard(event: Event): Promise<void> {
     const confirmed = await confirm(t('board.importQuestion'), {
       description: t('board.replaceDescription'), confirmLabel: t('board.import'), danger: true,
     })
-    if (confirmed) replaceLocalBoard(board)
+    if (!confirmed) return
+    if (boardState.shared) commit(replaceSharedContent(board))
+    else replaceLocalBoard(board)
   } catch (error) {
     importError.value = error instanceof BoardFormatError
         ? t(`board.formatErrors.${error.problem}`, {where: error.where})
@@ -63,6 +68,10 @@ async function importBoard(event: Event): Promise<void> {
 }
 
 async function startOver(): Promise<void> {
+  if (boardState.shared) {
+    await router.push('/platte')
+    return
+  }
   const confirmed = await confirm(t('board.newQuestion'), {
     description: t('board.replaceDescription'), confirmLabel: t('board.new'), danger: true,
   })
@@ -94,6 +103,10 @@ async function startOver(): Promise<void> {
         </template>
       </div>
       <p v-if="importError" class="m-0 text-sm text-(--eb-signal-text)">{{ importError }}</p>
+    </div>
+
+    <div class="border-t border-default pt-4">
+      <SharePanel/>
     </div>
 
     <div v-if="editable" class="flex flex-col gap-2 border-t border-default pt-4">

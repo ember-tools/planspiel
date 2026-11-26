@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     tile_retention_days: int = 30
     tile_max_bytes: int = 2 * 1024**3
     tile_sweep_seconds: int = 3600
+    board_max_bytes: int = 2_000_000
+    board_creations_per_hour: int = 30
 
     model_config = SettingsConfigDict(env_file=".env")
 
@@ -26,6 +28,10 @@ class Settings(BaseSettings):
     @property
     def tile_dir(self) -> Path:
         return self.data_dir / "tiles"
+
+    @property
+    def board_file(self) -> Path:
+        return self.data_dir / "boards.sqlite"
 
 
 settings = Settings()

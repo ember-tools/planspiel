@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import {computed, onBeforeUnmount, onMounted, ref, useTemplateRef} from 'vue'
+import {computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch} from 'vue'
+import {useRoute} from 'vue-router'
 import BoardMap from '../components/BoardMap.vue'
 import BoardPanel from '../components/board/BoardPanel.vue'
 import DrawPanel from '../components/board/DrawPanel.vue'
 import SnapshotPanel from '../components/board/SnapshotPanel.vue'
 import SnapshotTimeline from '../components/board/SnapshotTimeline.vue'
+import SyncStatus from '../components/board/SyncStatus.vue'
 import UnitsPanel from '../components/board/UnitsPanel.vue'
 import {setBoardField} from '../board/edits'
 import type {LatLng} from '../board/model'
 import {boardState, commit, loadViewerSettings, openLocalBoard, stepSnapshot} from '../board/store'
+import {closeSharedBoard, openSharedBoard, syncState} from '../board/sync'
 import {t} from '../i18n'
 
+const route = useRoute()
 const mapView = useTemplateRef<InstanceType<typeof BoardMap>>('mapView')
 const tab = ref('units')
 
@@ -37,13 +41,32 @@ function onKey(event: KeyboardEvent): void {
   stepSnapshot(event.key === 'ArrowLeft' ? -1 : 1)
 }
 
+/** The token of a shared board in the address, or nothing for the board kept in this browser. */
+const token = computed(() => typeof route.params.token === 'string' ? route.params.token : '')
+
+/** A shared board that cannot be shown: gone, or never there. */
+const unavailable = computed(() => token.value && (syncState.status === 'missing' || syncState.status === 'deleted'))
+
+function open(): void {
+  if (token.value) {
+    openSharedBoard(token.value)
+  } else {
+    closeSharedBoard()
+    openLocalBoard()
+  }
+}
+
 onMounted(() => {
   loadViewerSettings()
-  openLocalBoard()
   window.addEventListener('keydown', onKey)
 })
 
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+watch(token, open, {immediate: true})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  closeSharedBoard()
+})
 
 function focus(position: LatLng): void {
   mapView.value?.map?.panTo(position)
@@ -58,7 +81,12 @@ function saveView(): void {
 </script>
 
 <template>
-  <div v-if="boardState.board" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+  <div v-if="unavailable" class="py-12 text-center">
+    <h1 class="headline text-2xl">{{ syncState.status === 'deleted' ? t('sync.deletedTitle') : t('sync.missingTitle') }}</h1>
+    <p class="text-muted">{{ t('sync.unavailableHint') }}</p>
+    <UButton color="neutral" variant="outline" class="mt-4 inline-flex" to="/platte" :label="t('sync.toLocal')"/>
+  </div>
+  <div v-else-if="boardState.board" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
     <div class="flex min-w-0 flex-col gap-2 lg:h-[calc(100dvh-11rem)]">
       <div class="h-[55dvh] min-h-80 overflow-hidden rounded-(--ui-radius) border border-default lg:h-auto lg:grow">
         <BoardMap ref="mapView" :key="boardState.generation" :view="boardState.board.view"/>
@@ -67,6 +95,7 @@ function saveView(): void {
     </div>
     <aside class="flex min-w-0 flex-col gap-3 lg:h-[calc(100dvh-11rem)] lg:overflow-y-auto lg:overflow-x-hidden">
       <h1 class="headline m-0 truncate text-2xl">{{ boardState.board.title || t('board.untitled') }}</h1>
+      <SyncStatus v-if="token"/>
       <UTabs v-model="tab" :items="tabs" size="sm" class="w-full" :ui="{content: 'pt-2', trigger: 'px-1.5 gap-1', label: 'overflow-visible'}">
         <template #units>
           <UnitsPanel @focus="focus"/>
@@ -83,4 +112,5 @@ function saveView(): void {
       </UTabs>
     </aside>
   </div>
+  <p v-else class="py-12 text-center text-muted">{{ t('sync.connecting') }}</p>
 </template>

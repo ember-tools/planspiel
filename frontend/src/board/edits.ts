@@ -207,3 +207,11 @@ export function removeSnapshot(board: Board, snapshotId: string): Operation[] {
     if (!board.snapshots[snapshotId] || Object.keys(board.snapshots).length < 2) return []
     return [remove(['snapshots', snapshotId])]
 }
+
+/**
+ * Replaces everything on a shared board with another board, such as an imported file, as one batch
+ * that every client applies alike.
+ */
+export function replaceSharedContent(board: Board): Operation[] {
+    return (['title', 'region', 'view', 'vehicles', 'features', 'snapshots'] as const).map(key => set([key], board[key]))
+}

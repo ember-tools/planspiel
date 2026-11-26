@@ -8,6 +8,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
+from data.boards import BoardStore
+from services.boards import BoardHub, CreationLimit
 from services.tiles import TileCache, tile_client
 from services.tiles import router as tile_router
 from web.app import router
@@ -35,6 +37,9 @@ async def lifespan(application: FastAPI):
     client = tile_client()
     cache = TileCache(settings.tile_dir, client, settings.tile_retention_days * 86400.0, settings.tile_max_bytes)
     application.state.tile_cache = cache
+    boards = BoardStore(settings.board_file)
+    application.state.board_hub = BoardHub(boards, settings.board_max_bytes)
+    application.state.creation_limit = CreationLimit(settings.board_creations_per_hour)
     orphans = await asyncio.to_thread(cache.reconcile)
     if orphans:
         logger.info("Removed %s map tile files without an index entry", orphans)
@@ -43,8 +48,10 @@ async def lifespan(application: FastAPI):
     sweeper.cancel()
     with contextlib.suppress(asyncio.CancelledError):
         await sweeper
+    await application.state.board_hub.close_all()
     await cache.close()
     await client.aclose()
+    boards.close()
 
 
 app = FastAPI(title="Planspielplatte", lifespan=lifespan)
@@ -63,7 +70,7 @@ app.include_router(tile_router)
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok"}
+    return {"status": "ok", "boards": app.state.board_hub.store.count()}
 
 
 _static = Path(__file__).resolve().parent.parent / "static"
