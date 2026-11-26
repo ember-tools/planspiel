@@ -87,11 +87,33 @@ onBeforeUnmount(() => {
   width: var(--board-marker-size);
   line-height: 0;
   filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-black) 35%, transparent));
+  position: relative;
+  margin-bottom: calc(var(--board-turn-reach, 0) * (var(--board-marker-size) / 6 + 9px));
+  transform: rotate(var(--board-turn, 0deg));
 }
 
 .board-marker-symbol svg {
   width: 100%;
   height: auto;
+}
+
+.board-marker-front {
+  position: absolute;
+  top: 47.5%;
+  right: -9px;
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 9px solid var(--color-signal-500);
+  transform: translateY(-50%);
+}
+
+.board-marker-symbol.faces-left .board-marker-front {
+  right: auto;
+  left: -9px;
+  border-left: none;
+  border-right: 9px solid var(--color-signal-500);
 }
 
 .board-marker-caption {

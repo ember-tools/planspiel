@@ -82,8 +82,22 @@ function leaveEverySnapshot(board: Board, key: 'vehicles' | 'squads' | 'features
  * happens for a vehicle or snapshot the board does not have.
  */
 export function placeVehicle(board: Board, snapshotId: string, vehicleId: string, position: LatLng): Operation[] {
-    if (!board.vehicles[vehicleId] || !board.snapshots[snapshotId]) return []
+    const snapshot = board.snapshots[snapshotId]
+    if (!board.vehicles[vehicleId] || !snapshot) return []
+    if (snapshot.vehicles[vehicleId]) return [set(['snapshots', snapshotId, 'vehicles', vehicleId, 'position'], position)]
     return [set(['snapshots', snapshotId, 'vehicles', vehicleId], {position})]
+}
+
+/** A direction in degrees brought into 0 up to 360. */
+export function normalHeading(degrees: number): number {
+    const heading = ((degrees % 360) + 360) % 360
+    return heading >= 360 ? 0 : heading
+}
+
+/** Turns a vehicle on scene so its front points in a direction, in degrees clockwise from north. */
+export function turnVehicle(board: Board, snapshotId: string, vehicleId: string, heading: number): Operation[] {
+    if (!board.snapshots[snapshotId]?.vehicles[vehicleId] || !Number.isFinite(heading)) return []
+    return [set(['snapshots', snapshotId, 'vehicles', vehicleId, 'heading'], normalHeading(heading))]
 }
 
 /** Takes a vehicle off scene in a snapshot; its dismounted squads leave with it. */

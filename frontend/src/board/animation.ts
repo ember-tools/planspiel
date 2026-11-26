@@ -18,6 +18,12 @@ export function betweenLines(from: LatLng[], to: LatLng[], share: number): LatLn
     return to.map((point, index) => between(from[index] ?? point, point, share))
 }
 
+/** The direction a share of the way from one heading to another, turning the shorter way round. */
+export function betweenHeadings(from: number, to: number, share: number): number {
+    const turn = ((to - from + 540) % 360) - 180
+    return (((from + turn * share) % 360) + 360) % 360
+}
+
 /**
  * Calls `step` once per frame with the eased progress from 0 to 1 over `ANIMATION_MS`, then
  * `done`. Returns a function that stops it early without calling `done`.

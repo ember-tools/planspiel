@@ -57,6 +57,17 @@ class BoardFormatTest(unittest.TestCase):
                 check_board(board)
             self.assertEqual(problem, raised.exception.problem)
 
+    def test_a_vehicle_may_carry_a_heading_from_0_up_to_360(self):
+        for heading in (0, 90.5, 359.9):
+            board = sample_board()
+            board["snapshots"]["t1"]["vehicles"]["v1"]["heading"] = heading
+            self.assertEqual(heading, check_board(board)["snapshots"]["t1"]["vehicles"]["v1"]["heading"])
+        for heading in (360, -1, "90", True, None, float("nan")):
+            board = sample_board()
+            board["snapshots"]["t1"]["vehicles"]["v1"]["heading"] = heading
+            with self.assertRaises(BoardFormatError, msg=repr(heading)):
+                check_board(board)
+
     def test_ids_must_match_keys_and_never_reach_a_prototype(self):
         board = sample_board()
         board["features"]["__proto__"] = {"id": "__proto__", "order": 1, "kind": "text"}

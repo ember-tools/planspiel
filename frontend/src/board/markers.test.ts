@@ -3,7 +3,7 @@ import {defaultSquads} from '../catalog'
 import {createBoard, sortedSnapshots} from './document'
 import {addVehicle} from './edits'
 import {applyOperations} from './operations'
-import {pixelsPerMetre, symbolSize, vehicleMarker, vehicleSymbolPerMetre} from './markers'
+import {pixelsPerMetre, symbolSize, symbolTurn, vehicleMarker, vehicleSymbolPerMetre} from './markers'
 
 describe('symbolSize', () => {
     it('is 48 pixels at zoom 17 and doubles every two zoom levels', () => {
@@ -34,5 +34,16 @@ describe('drawing vehicles to scale', () => {
         applyOperations(board as unknown as Record<string, unknown>, vehicle.operations)
         const html = vehicleMarker(board, sortedSnapshots(board)[0]!.id, board.vehicles[vehicle.id]!, false).html
         expect(html).toContain('class="board-marker is-to-scale" style="--board-length: 8.5"')
+        expect(html).toContain('board-marker-front')
+    })
+})
+
+describe('turned vehicle symbols', () => {
+    it('never stand on their heads; a front to the west of north or south shows on the left', () => {
+        expect(symbolTurn()).toEqual({rotation: 0, facesLeft: false})
+        expect(symbolTurn(0)).toEqual({rotation: -90, facesLeft: false})
+        expect(symbolTurn(180)).toEqual({rotation: 90, facesLeft: false})
+        expect(symbolTurn(270)).toEqual({rotation: 0, facesLeft: true})
+        expect(symbolTurn(200)).toEqual({rotation: -70, facesLeft: true})
     })
 })

@@ -3,7 +3,7 @@ import {defaultSquads, formatStrength} from '../catalog'
 import {createBoard, minutesBetween, sortedSnapshots} from './document'
 import {
     addFeature, addVehicle, copySnapshot, crewStrength, dismountSquad, eraseFeature, insertSnapshotBefore,
-    insertSnapshotBetween, mountSquad, placeVehicle, removeFeature, removeVehicle, setSquads,
+    insertSnapshotBetween, mountSquad, normalHeading, placeVehicle, removeFeature, removeVehicle, setSquads, turnVehicle,
     updateSnapshot, withdrawVehicle,
 } from './edits'
 import type {Board} from './model'
@@ -197,5 +197,28 @@ describe('inserted snapshots', () => {
         apply(inserted.operations)
         board.snapshots[inserted.id]!.vehicles[vehicleId]!.position[0] = 0
         expect(board.snapshots[snapshotId]!.vehicles[vehicleId]!.position[0]).toBe(52.5)
+    })
+})
+
+describe('turning vehicles', () => {
+    it('keeps the heading when a turned vehicle is moved', () => {
+        apply(placeVehicle(board, snapshotId, vehicleId, [52.5, 13.4]))
+        apply(turnVehicle(board, snapshotId, vehicleId, 200))
+        apply(placeVehicle(board, snapshotId, vehicleId, [52.6, 13.5]))
+        expect(board.snapshots[snapshotId]!.vehicles[vehicleId]).toEqual({position: [52.6, 13.5], heading: 200})
+    })
+
+    it('brings any direction into 0 up to 360', () => {
+        expect(normalHeading(-90)).toBe(270)
+        expect(normalHeading(720)).toBe(0)
+        expect(normalHeading(-1e-14)).toBe(0)
+        apply(placeVehicle(board, snapshotId, vehicleId, [52.5, 13.4]))
+        apply(turnVehicle(board, snapshotId, vehicleId, -45))
+        expect(board.snapshots[snapshotId]!.vehicles[vehicleId]!.heading).toBe(315)
+    })
+
+    it('turns only vehicles on scene', () => {
+        expect(turnVehicle(board, snapshotId, vehicleId, 10)).toEqual([])
+        expect(turnVehicle(board, snapshotId, 'unknown', 10)).toEqual([])
     })
 })

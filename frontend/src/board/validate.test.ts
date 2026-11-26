@@ -64,6 +64,14 @@ describe('parseBoard', () => {
         expect(problemAfter(copy => { copy.title = undefined })).toBe('field')
     })
 
+    it('accepts a vehicle heading from 0 up to 360 and nothing else', () => {
+        const placed = (copy: any) => copy.snapshots[snapshotId].vehicles[vehicleId]
+        expect(problemAfter(copy => { placed(copy).heading = 359.5 })).toBeNull()
+        for (const heading of [360, -1, '90', null, Number.NaN]) {
+            expect(problemAfter(copy => { placed(copy).heading = heading }), String(heading)).toBe('field')
+        }
+    })
+
     it('refuses unknown kinds and styles', () => {
         expect(problemAfter(copy => { copy.features[featureId].mark = 'volcano' })).toBe('field')
         expect(problemAfter(copy => { copy.features[featureId].kind = 'circle' })).toBe('field')

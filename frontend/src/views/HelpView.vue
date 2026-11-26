@@ -27,6 +27,7 @@ usePage({
       <HelpTopic title="Platzieren" :paragraphs="[
         'Ziehe ein Fahrzeug aus der Liste auf die Karte, oder wähle im Menü des Fahrzeugs „Platzieren“ und klicke auf die Stelle. Auf der Karte verschiebst du es mit der Maus.',
         'Ein Fahrzeug, das in einem Lagestand nicht auf der Karte steht, ist in diesem Lagestand nicht vor Ort. Mit „Von der Karte nehmen“ nimmst du es wieder herunter.',
+        'Der kleine Keil am Zeichen zeigt, wo vorne ist. Klicke ein Fahrzeug an und ziehe den Punkt vor seiner Front im Kreis, um es zu drehen; mit gedrückter Umschalttaste rastet es in 15-Grad-Schritten. Die Schrift bleibt dabei lesbar: Zeigt die Front nach links, sitzt der Keil links. Jeder Lagestand hat seine eigene Richtung.',
       ]"/>
       <HelpTopic title="Absitzen und aufsitzen" :paragraphs="[
         'Klicke ein Fahrzeug an, dann erscheinen seine Trupps. Mit „Absitzen“ steigt ein Trupp aus und steht neben dem Fahrzeug; von da an bewegst du ihn unabhängig. Mit „Aufsitzen“ steigt er wieder ein und fährt mit dem Fahrzeug. Absitzen kann nur, wer in einem Fahrzeug auf der Karte sitzt.',
