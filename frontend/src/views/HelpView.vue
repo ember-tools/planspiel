@@ -34,6 +34,7 @@ usePage({
         '„Alle absitzen“ und „Alle aufsitzen“ erledigen das für die ganze Besatzung auf einmal.',
         'Dasselbe geht direkt auf der Karte: Klickst du ein Fahrzeug an, öffnet sich daneben ein kleines Menü mit seinen Trupps; ein abgesessener Trupp bietet dort „Aufsitzen“ an.',
         'Unter dem Fahrzeug steht die Stärke der Besatzung an Bord als Führer/Unterführer/Mannschaft/Gesamt, etwa 0/1/5/6.',
+        'Abgesessene Trupps erscheinen als kleines Zeichen mit abgerundeten Ecken und einem Punkt darüber, ohne Räder; so unterscheiden sie sich auf einen Blick von den Fahrzeugen.',
       ]"/>
     </HelpSection>
 

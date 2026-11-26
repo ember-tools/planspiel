@@ -3,7 +3,9 @@ import {defaultSquads} from '../catalog'
 import {createBoard, sortedSnapshots} from './document'
 import {addVehicle} from './edits'
 import {applyOperations} from './operations'
-import {pixelsPerMetre, symbolSize, symbolTurn, vehicleMarker, vehicleSymbolPerMetre} from './markers'
+import {unitSymbol} from '@emberbox/ui'
+import {squadSpec, vehicleSpec} from '../symbols/units'
+import {pixelsPerMetre, squadMarker, symbolSize, symbolTurn, vehicleMarker, vehicleSymbolPerMetre} from './markers'
 
 describe('symbolSize', () => {
     it('is 48 pixels at zoom 17 and doubles every two zoom levels', () => {
@@ -45,5 +47,18 @@ describe('turned vehicle symbols', () => {
         expect(symbolTurn(180)).toEqual({rotation: 90, facesLeft: false})
         expect(symbolTurn(270)).toEqual({rotation: 0, facesLeft: true})
         expect(symbolTurn(200)).toEqual({rotation: -70, facesLeft: true})
+    })
+})
+
+describe('dismounted squads', () => {
+    it('are drawn in the compact rounded form, unlike vehicles', () => {
+        const board = createBoard('Test')
+        const vehicle = addVehicle(board, {type: 'be:LHF', callsign: 'LHF 1100/1', station: ''}, defaultSquads('be:LHF'))
+        applyOperations(board as unknown as Record<string, unknown>, vehicle.operations)
+        const placed = board.vehicles[vehicle.id]!
+        const squad = Object.values(placed.squads)[0]!
+        expect(squadSpec(squad.function).shape).toBe('squad')
+        expect(squadMarker(placed, squad, false).html).toContain(unitSymbol(squadSpec(squad.function)))
+        expect(vehicleSpec(placed.type, board.region).shape).not.toBe('squad')
     })
 })

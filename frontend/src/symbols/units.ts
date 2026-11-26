@@ -13,7 +13,7 @@ export function vehicleSpec(typeId: string, regionId: string): SymbolSpec {
 /** What the symbol of a dismounted squad is drawn from: a unit of squad size named by its function. */
 export function squadSpec(functionId: string): SymbolSpec {
     return {
-        shape: 'unit',
+        shape: 'squad',
         organisation: MEDICAL_FUNCTIONS.has(functionId) ? 'medical' : 'fire',
         text: squadFunction(functionId).short,
         size: 'squad',
