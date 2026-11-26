@@ -9,8 +9,7 @@ export default defineConfig({
         vue(),
         emberbox({
             url: 'https://planspiel.emberbox.app',
-            // TODO: switch to a planspiel logo once @emberbox/ui ships one
-            logo: 'emberbox',
+            logo: 'planspiel',
             prerender: {entry: 'src/prerender.ts', paths: ['/', '/hilfe']},
         }),
     ],

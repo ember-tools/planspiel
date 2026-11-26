@@ -17,6 +17,22 @@ The image is `ghcr.io/ember-tools/planspiel`. `compose.yml` builds and starts it
 ./toolchain.sh be-serve    # build the frontend and serve everything on port 8000
 ```
 
+### Behind Traefik
+
+`compose.prod.yml` is a template for running the image behind an existing Traefik (v3.1 or later)
+with TLS. Set the variables in an `.env` file beside it or in the environment:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `PLANSPIEL_HOST` | required | Public host name, e.g. `planspiel.example.org`; also sets `CORS_ORIGINS` |
+| `PROXY_NETWORK` | `proxy` | External Docker network Traefik is attached to |
+| `TRAEFIK_ENTRYPOINT` | `websecure` | Traefik entrypoint for HTTPS |
+| `TRAEFIK_CERT_RESOLVER` | `letsencrypt` | Traefik certificate resolver |
+
+The template turns off Traefik's access log for this router, since the links that open a board
+carry their token in the path. Anything specific to one server, such as automatic updates or
+wildcard certificates, belongs in that server's own copy, not in the template.
+
 ### Volume
 
 Everything the server keeps lives under `/data`:
