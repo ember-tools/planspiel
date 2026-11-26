@@ -5,6 +5,8 @@ import {onBeforeUnmount, watch} from 'vue'
 import {t} from '../i18n'
 import {addFeature, placeVehicle, type NewFeature} from './edits'
 import {shapePoints, toLatLng} from './geometry'
+import {atLeastMinimum, cornersOf, frameOf, upright} from './rectangle'
+import {HANDLE_DRAG} from './rectangle-editor'
 import type {LatLng} from './model'
 import {boardState, commit, currentSnapshot, select, useTool, type Tool} from './store'
 
@@ -61,11 +63,14 @@ export function useMapTools(map: L.Map): void {
         if (tool.kind === 'draw-line') {
             map.pm.enableDraw('Line', {templineStyle: {className: `board-line-${tool.style}`}, finishOn: 'dblclick'})
         } else if (tool.kind === 'draw-area') {
-            map.pm.enableDraw('Polygon', {templineStyle: {className: `board-area-${tool.style}`}, finishOn: 'dblclick'})
+            if (tool.style === 'staging') map.pm.enableDraw('Rectangle', {templineStyle: {className: 'board-area-staging'}})
+            else map.pm.enableDraw('Polygon', {templineStyle: {className: `board-area-${tool.style}`}, finishOn: 'dblclick'})
         }
     }, {immediate: true})
 
-    map.on('click', event => clickWith(boardState.tool, toLatLng(event.latlng)))
+    map.on('click', event => {
+        if (!container.classList.contains(HANDLE_DRAG)) clickWith(boardState.tool, toLatLng(event.latlng))
+    })
 
     map.on('pm:create', event => {
         const tool = boardState.tool
@@ -73,7 +78,9 @@ export function useMapTools(map: L.Map): void {
         map.removeLayer(layer)
         const points = shapePoints(layer)
         if (tool.kind === 'draw-line') createFeature({kind: 'line', style: tool.style}, points)
-        else if (tool.kind === 'draw-area') createFeature({kind: 'area', style: tool.style}, points)
+        else if (tool.kind === 'draw-area' && tool.style === 'staging') {
+            createFeature({kind: 'area', style: 'staging'}, cornersOf(atLeastMinimum(upright(frameOf(points)))))
+        } else if (tool.kind === 'draw-area') createFeature({kind: 'area', style: tool.style}, points)
     })
 
     function onDragOver(event: DragEvent): void {

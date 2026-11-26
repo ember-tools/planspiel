@@ -37,8 +37,9 @@ usePage({
 
     <HelpSection title="Zeichnen">
       <HelpTopic :paragraphs="[
-        'Im Reiter „Zeichnen“ setzt du Zeichen wie Schadensstelle, Brand, Gefahr, Bereitstellungsraum, Einsatzleitung, Wasserentnahmestelle und Verletztensammelstelle mit einem Klick auf die Karte.',
-        'Linien (Schlauchleitung, Absperrung, Weg) und Flächen (Gefahrenbereich, Einsatzabschnitt, Bereitstellungsraum) zeichnest du Punkt für Punkt. Ein Doppelklick oder ein Klick auf den ersten Punkt beendet sie, Esc bricht ab.',
+        'Im Reiter „Zeichnen“ setzt du Zeichen wie Schadensstelle, Brand, Gefahr, Einsatzleitung, Wasserentnahmestelle und Verletztensammelstelle mit einem Klick auf die Karte.',
+        'Linien (Schlauchleitung, Absperrung, Weg) und Flächen (Gefahrenbereich, Einsatzabschnitt) zeichnest du Punkt für Punkt. Ein Doppelklick oder ein Klick auf den ersten Punkt beendet sie, Esc bricht ab.',
+        'Einen Bereitstellungsraum ziehst du als Rechteck auf: Klicke auf zwei gegenüberliegende Ecken. Ausgewählt lässt er sich an den Ecken vergrößern und verkleinern, am Punkt darüber drehen und in der Mitte verschieben.',
         'Mit „Text setzen“ und einem Klick auf die Karte legst du einen freien Text ab, etwa einen Hinweis zur Zufahrt.',
         'Klickst du etwas Gezeichnetes an, kannst du es beschriften – die Beschriftung steht dann auf der Karte –, die Punkte von Linien und Flächen verschieben, es nur aus diesem Lagestand entfernen oder überall löschen.',
       ]"/>
