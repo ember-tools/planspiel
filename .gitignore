@@ -1,0 +1,12 @@
+.direnv
+.idea
+.concept
+node_modules
+dist
+__pycache__
+*.pyc
+.env
+backend/data/
+backend/static/
+frontend/auto-imports.d.ts
+frontend/components.d.ts
